@@ -10,6 +10,12 @@
 *.dll
 *.dylib
 
+# VS code
+.vscode/
+
+# MESON
+builddir/
+
 # Qt-es
 object_script.*.Release
 object_script.*.Debug
@@ -50,3 +56,6 @@ compile_commands.json
 
 # QtCreator local machine specific files for imported projects
 *creator.user*
+
+# CMake
+build*
