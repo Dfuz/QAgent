@@ -8,12 +8,12 @@ if(Qt5Test_FOUND)
 
 	include_directories(${TOP_DIR}/src)
 
-	add_executable(fcagent
-	    fcagent.cpp
+	add_executable(qagent_test
+	    qagent.cpp
 	    ${SOURCES}
 	    ${HEADERS})
 
-	add_test(NAME fcagent COMMAND fcmanager)
-	target_link_libraries(fcagent PRIVATE Qt5::Test ${QT_MODULES})
+	add_test(NAME qagent_test COMMAND qagent_test)
+	target_link_libraries(qagent_test PRIVATE Qt5::Test ${QT_MODULES})
 
 endif()

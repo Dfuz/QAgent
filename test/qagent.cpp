@@ -3,7 +3,7 @@
 #include <QFile>
 
 
-class fcagent_tests: public QObject
+class qagent_tests: public QObject
 {
     Q_OBJECT
 private slots:
@@ -11,5 +11,5 @@ private slots:
 
 };
 
-QTEST_MAIN(fcagent_tests)
-//#include "fcagent.moc"
+QTEST_MAIN(qagent_tests)
+#include "qagent.moc"
