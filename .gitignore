@@ -59,3 +59,7 @@ compile_commands.json
 
 # CMake
 build*
+
+# KDevelop
+.kdev4/
+*.kdev4
