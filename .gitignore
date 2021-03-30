@@ -59,7 +59,9 @@ compile_commands.json
 
 # CMake
 build*
+<<<<<<< HEAD
 
 # KDevelop
 .kdev4/
 *.kdev4
+.cache/

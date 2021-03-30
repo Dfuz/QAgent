@@ -6,6 +6,7 @@
 #include <sys/sysinfo.h>
 
 #include <proc/readproc.h>
+#include <proc/sysinfo.h>
 
 #include <sys/statfs.h>
 #else
@@ -15,6 +16,7 @@
 //#include <utils.h>
 #include <tuple>
 #include <stdexcept>
+#include <numeric>
 #include <QMap>
 #include <QObject>
 #include <QFile>
@@ -89,8 +91,13 @@ public:
 signals:
     void pulledOSStatus(OS_STATUS);
 
+public slots:
+    void pullOSStatusSlot();
+
 private:
     QTimer evTimer{this};
+
+    static uint countPcpu(const struct proc_t *);
 };
 
 }
