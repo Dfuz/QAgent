@@ -26,7 +26,6 @@ void QAgent::initSocket()
 
 void QAgent::startSend()
 {
-
 }
 
 void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
@@ -36,5 +35,9 @@ void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
            .toGet<Utils::Service>()
            .toSend(message)
            .invoke();
-    return;
+    if (msg)
+    {
+        auto newCompression = msg->payload["compression"];
+        QAgent::setCompression(newCompression.toInt());
+    }
 }
