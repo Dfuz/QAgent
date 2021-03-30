@@ -31,10 +31,11 @@ void QAgent::startSend()
 
 void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
 {
-    auto message = Utils::ServiceMessage{R"({"who":"agent"})"};
+    auto message = Utils::HandshakeMessage{R"({"who":"agent"})"};
     auto msg = _query->makeQueryRead()
-           .toGet<Utils::Service>()
+           .toGet<Utils::Handshake>()
            .toSend(message)
            .invoke();
+    
     return;
 }
