@@ -23,7 +23,11 @@ list(APPEND SOURCES
     ${TOP_DIR}/src/qagent.cpp)
 
 list(APPEND HEADERS
-    ${TOP_DIR}/src/qagent.h)
+    ${TOP_DIR}/src/qagent.h
+    ${TOP_DIR}/src/common/utils.h
+    ${TOP_DIR}/src/common/querybuilder.h
+    ${TOP_DIR}/src/common/messagebuilder.h
+    )
 
 add_subdirectory(src)
 add_subdirectory(test)
