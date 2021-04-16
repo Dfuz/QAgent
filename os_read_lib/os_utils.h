@@ -78,7 +78,7 @@ class OS_EVENTS : public QObject
 public:
     enum OSCollectOptions
     {
-        All = 0,
+        All = 1,
         NO_FS = 1 << 1,
         NO_MEM = 1 << 2,
         NO_PS = 1 << 3
@@ -94,10 +94,10 @@ public:
      * \brief pullOSStatus - Вытягивает статуи системы
      * \return Статус системы
      */
-    static OS_STATUS pullOSStatus(const OSCollectOptions &);
+    static OS_STATUS pullOSStatus(int);
     OS_STATUS pullOSStatus();
     
-    void setCollectOptions(const OSCollectOptions &);
+    void setCollectOptions(int);
 
 signals:
     void pulledOSStatus(OS_STATUS);
@@ -107,7 +107,7 @@ public slots:
 
 private:
     QTimer evTimer{this};
-    OSCollectOptions collectOptions = OSCollectOptions::All;
+    int collectOptions = OSCollectOptions::All;
 
     static PSMAP pullPSMAP();
     static FSMAP pullFSMAP();

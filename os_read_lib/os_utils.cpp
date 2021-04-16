@@ -52,35 +52,34 @@ OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus()
     return pullOSStatus(collectOptions);
 }
 
-OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus(const OSCollectOptions &opt)
+OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus(int opt)
 {
     struct sysinfo si;
     if (sysinfo(&si) == -1)
         throw std::runtime_error("failed to read sysinfo()");
-        
-    auto allFs = (opt & NO_FS) ? pullFSMAP() : FSMAP{};
+    
+    auto allPs = (opt & NO_PS) ? PSMAP{} : pullPSMAP();        
+    auto allFs = (opt & NO_FS) ? FSMAP{} : pullFSMAP();
 
-    size_t TotalFSSize = (opt & NO_FS) ?
+    size_t TotalFSSize = (opt & NO_FS) ? 0 :
         std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
             allFs.first().total,
-            [](const auto &total, const auto &fs) {return total + fs.total;}) : 0;
+            [](const auto &total, const auto &fs) {return total + fs.total;});
 
-    size_t FreeFSSize = (opt & NO_FS) ?
+    size_t FreeFSSize = (opt & NO_FS) ? 0 :
         std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
             allFs.first().free,
-            [](const auto &free, const auto &fs) {return free + fs.free;}) : 0;
-    
-    auto allPs = (opt & NO_PS) ? pullPSMAP() : PSMAP{};
+            [](const auto &free, const auto &fs) {return free + fs.free;});
 
     return {
         .TotalFSSize = TotalFSSize,
         .FreeFSSize = FreeFSSize,
 
-        .cpuLoad = (opt & NO_PS) ? si.loads[0] : 0,
-        .psCount = (opt & NO_PS) ? si.procs : static_cast<ushort>(0),
+        .cpuLoad = (opt & NO_PS) ? 0 : si.loads[0],
+        .psCount = (opt & NO_PS) ? static_cast<ushort>(0) : si.procs,
 
-        .MemoryTotal = (opt & NO_MEM) ? si.totalram : 0,
-        .MemoryFree = (opt & NO_MEM) ? si.freeram : 0,
+        .MemoryTotal = (opt & NO_MEM) ? 0 : si.totalram,
+        .MemoryFree = (opt & NO_MEM) ? 0 : si.freeram,
 
         .allFs = allFs,
         .allPs = allPs
@@ -104,7 +103,7 @@ void OS_UTILS::OS_EVENTS::pullOSStatusSlot()
     emit pulledOSStatus(pullOSStatus());
 }
 
-void OS_UTILS::OS_EVENTS::setCollectOptions(const OSCollectOptions &_collectOptions)
+void OS_UTILS::OS_EVENTS::setCollectOptions(int _collectOptions)
 {
     collectOptions = _collectOptions;
 }
