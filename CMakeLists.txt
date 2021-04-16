@@ -27,6 +27,7 @@ list(APPEND HEADERS
     ${TOP_DIR}/src/common/utils.h
     ${TOP_DIR}/src/common/querybuilder.h
     ${TOP_DIR}/src/common/messagebuilder.h
+    ${TOP_DIR}/src/common/data.h
     )
 
 add_subdirectory(src)

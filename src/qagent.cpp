@@ -5,7 +5,6 @@ QAgent::QAgent(QObject *parent) : QObject(parent)
 {
     initSocket();
     timer.callOnTimeout(this, &QAgent::startCollectData);
-
 }
 
 void QAgent::readConfig(QString settings_path)
@@ -30,6 +29,9 @@ void QAgent::readConfig(QString settings_path)
                                      .toString()
                                      )
                 );
+
+
+
 }
 
 bool QAgent::startListen()

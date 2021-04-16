@@ -2,6 +2,8 @@
 #define QAGENT_H
 
 #include "common/querybuilder.h"
+#include "common/utils.h"
+#include "common/data.h"
 
 #include <QObject>
 #include <QTcpSocket>
@@ -11,6 +13,7 @@
 #include <QTimer>
 #include <memory>
 #include <chrono>
+#include <map>
 
 using namespace std::chrono;
 
@@ -30,6 +33,8 @@ private:
     inline static int compression;
     quint16 bufferSize = 100; // максимальное количество значений в буфере памяти
     std::chrono::seconds refreshActiveChecks{60s};
+    std::map<Utils::DataTypes, bool> collectData; // список собираемых значений
+    std::vector<Utils::CollectableData> dataArray; // список собранных значений
 
     // Методы
     void initSocket();

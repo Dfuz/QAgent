@@ -10,6 +10,10 @@
 
 namespace Utils {
 
+enum DataTypes {
+ // TODO
+};
+
 inline bool readJsonFile(QIODevice &device, QSettings::SettingsMap &map)
 {
     QByteArray readedBytes = device.readAll();
