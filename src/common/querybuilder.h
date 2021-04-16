@@ -13,6 +13,8 @@
 
 #include "messagebuilder.h"
 
+static const QByteArray QFCM_HEADER{"QFCM"};
+
 namespace Utils {
 
 enum QueryDirection {
@@ -20,19 +22,16 @@ enum QueryDirection {
     Unidirectional
 };
 
-template<MessageType ret>
-using Verificator = std::function<bool(const Message<ret> &)>;
-
 template<QueryDirection direct, bool iSsending, MessageType to = NoMessage, MessageType ret = NoMessage>
 struct Query {
 
     template<MessageType invRet>
-    using InvokeReturn = std::optional<Message<invRet>>;
+    using InvokeReturn = std::optional<ReadableMessage<invRet>>;
 
     Query(std::shared_ptr<QTcpSocket> _socket):
         socket(_socket)
     {}
-    Query(std::shared_ptr<QTcpSocket> _socket, const Message<to> _msg):
+    Query(std::shared_ptr<QTcpSocket> _socket, const SendableMessage<to> _msg):
         socket(_socket), msg(_msg)
     {}
 
@@ -43,7 +42,7 @@ struct Query {
      * \return
      */
     template<MessageType newTo>
-    constexpr Query<direct, iSsending, newTo, ret> toSend(const Message<newTo> & _msg, int newCompressionLevel = 0) noexcept {
+    constexpr Query<direct, iSsending, newTo, ret> toSend(const SendableMessage<newTo> & _msg, int newCompressionLevel = 0) noexcept {
         Query<direct, iSsending, newTo, ret> retvar{socket, _msg};
         return retvar.setCompression(newCompressionLevel);
     };
@@ -106,7 +105,7 @@ struct Query {
                 T == Unidirectional &&
                 iSsending,
              bool> = true>
-    Message<NoMessage> invoke() noexcept {
+    ReadableMessage<NoMessage> invoke() noexcept {
 
         writeMessage();
         return {};
@@ -128,15 +127,6 @@ struct Query {
     }
 
     /*!
-     * \brief setVerificator
-     * \param verFn - верификатор по которому можно проверить сообщение
-     * \return
-     */
-    constexpr Query& setVerificator(Verificator<ret> verFn) noexcept {
-        verificators.push_back(verFn);
-        return *this;
-    }
-    /*!
      * \brief setCompression - задаем уровень компрессии
      * \param newLevel
      * \return
@@ -150,8 +140,7 @@ struct Query {
 
 private:
     std::shared_ptr<QTcpSocket> socket;
-    Message<to> msg;
-    std::vector<Verificator<ret>> verificators;
+    SendableMessage<to> msg;
     int compressionLevel = 0;
 
     bool writeMessage()
@@ -160,6 +149,7 @@ private:
         if constexpr (to != NoMessage) {
             auto toSend = qCompress(msg.toJson(), compressionLevel);
             quint16 size = toSend.size();
+            socket->write(QFCM_HEADER);
             socket->write(reinterpret_cast<const char*>(&size), sizeof(quint16));
             socket->write(toSend);
             if (!socket->waitForBytesWritten()) {
@@ -171,39 +161,34 @@ private:
         return true;
     }
 
-    std::optional<Message<ret>> readMessage()
+    std::optional<ReadableMessage<ret>> readMessage()
     {
         // Участок приема сообщения
         if constexpr (ret == NoMessage)
-            return Message<NoMessage>{};
+            return ReadableMessage<NoMessage>{};
 
         qDebug()<<"Query: waiting to read";
 
         if (!socket->waitForReadyRead())
             return std::nullopt;
 
-        auto gotSize = socket->read(sizeof(quint16));
-        auto gotRaw = socket->read(reinterpret_cast<const quint16*>(gotSize.constData())[0]);
-        qDebug()<<"Query: readed "<<gotRaw;
+        auto gotSize = socket->read(sizeof(quint16) + QFCM_HEADER.size());
+        qDebug()<<"Query: readed header "<<gotSize;
+        if (!gotSize.startsWith(QFCM_HEADER))
+            return std::nullopt;
 
-        auto got = Message<ret>::parseJson(qUncompress(gotRaw));
+        auto gotRaw = socket->read(reinterpret_cast<const quint16*>(gotSize.remove(0, QFCM_HEADER.size()).constData())[0]);
+        qDebug()<<"Query: readed raw "<<gotRaw;
+        
+
+        auto got = ReadableMessage<ret>::parseJson(qUncompress(gotRaw));
 
         if(!got.has_value()) {
             qDebug()<<"Query: failed to parse: "<<gotRaw.data();
             return std::nullopt;
         }
-        
-        if (!checkVerificators(got.value()))
-            return std::nullopt;
 
         return got;
-    }
-
-    bool checkVerificators(const Message<ret> &msg)
-    {
-        if (verificators.empty()) return true;
-        return std::all_of(verificators.cbegin(), verificators.cend(),
-                        [&](auto fn) { return fn(msg);});
     }
 };
 
@@ -248,7 +233,7 @@ public:
      * \return
      */
     template<MessageType to>
-    Query<Unidirectional, true, to, NoMessage> onlySend(const Message<to> & msg) noexcept {
+    Query<Unidirectional, true, to, NoMessage> onlySend(const SendableMessage<to> & msg) noexcept {
         return makeQuery<Unidirectional>()
                 .toGet<NoMessage>()
                 .toSend<to>(msg);
