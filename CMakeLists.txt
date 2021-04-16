@@ -31,7 +31,10 @@ list(APPEND HEADERS
     ${TOP_DIR}/src/common/message_spec/messagesendable.h
     ${TOP_DIR}/src/common/message_spec/messagereadable.h
     ${TOP_DIR}/src/common/message_spec/messagereadable_handshake.h
-    ${TOP_DIR}/src/common/message_spec/messagereadable_nomessage.h)
+    ${TOP_DIR}/src/common/message_spec/messagereadable_nomessage.h
+    ${TOP_DIR}/src/common/message_spec/messagereadable_data.h
+    ${TOP_DIR}/src/common/message_spec/messagereadable_service.h
+    ${TOP_DIR}/src/common/message_spec/messagereadable_test.h)
 
 add_subdirectory(src)
 add_subdirectory(test)

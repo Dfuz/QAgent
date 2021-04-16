@@ -13,6 +13,8 @@
 
 #include "messagebuilder.h"
 
+static const QByteArray QFCM_HEADER{"QFCM"};
+
 namespace Utils {
 
 enum QueryDirection {
@@ -147,6 +149,7 @@ private:
         if constexpr (to != NoMessage) {
             auto toSend = qCompress(msg.toJson(), compressionLevel);
             quint16 size = toSend.size();
+            socket->write(QFCM_HEADER);
             socket->write(reinterpret_cast<const char*>(&size), sizeof(quint16));
             socket->write(toSend);
             if (!socket->waitForBytesWritten()) {
@@ -169,9 +172,14 @@ private:
         if (!socket->waitForReadyRead())
             return std::nullopt;
 
-        auto gotSize = socket->read(sizeof(quint16));
-        auto gotRaw = socket->read(reinterpret_cast<const quint16*>(gotSize.constData())[0]);
-        qDebug()<<"Query: readed "<<gotRaw;
+        auto gotSize = socket->read(sizeof(quint16) + QFCM_HEADER.size());
+        qDebug()<<"Query: readed header "<<gotSize;
+        if (!gotSize.startsWith(QFCM_HEADER))
+            return std::nullopt;
+
+        auto gotRaw = socket->read(reinterpret_cast<const quint16*>(gotSize.remove(0, QFCM_HEADER.size()).constData())[0]);
+        qDebug()<<"Query: readed raw "<<gotRaw;
+        
 
         auto got = ReadableMessage<ret>::parseJson(qUncompress(gotRaw));
 
