@@ -7,12 +7,8 @@ void OS_UTILS::OS_EVENTS::setTimer(int timer)
     evTimer.start(timer);
 }
 
-OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus()
+OS_UTILS::PSMAP OS_UTILS::OS_EVENTS::pullPSMAP()
 {
-    struct sysinfo si;
-    if (sysinfo(&si) == -1)
-        throw std::runtime_error("failed to read sysinfo()");
-
     auto procs = readproctab(PROC_FILLUSR | PROC_FILLSTAT | PROC_FILLSTATUS | PROC_FILLCOM | PROC_FILLMEM);
     if (procs == NULL)
         throw std::runtime_error("failed to read procs");
@@ -25,7 +21,11 @@ OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus()
                          countPcpu(procs[i]),    //FIXME: count cpu by ->starttime/utime... mb...
                          procs[i]->size
                      });
+    return allPs;
+}
 
+OS_UTILS::FSMAP OS_UTILS::OS_EVENTS::pullFSMAP()
+{
     struct statfs fs;
     FSMAP allFs{};
 
@@ -44,25 +44,43 @@ OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus()
             fs.f_bfree
         });
     }
+    return allFs;
+}
 
-    size_t TotalFSSize = 0, FreeFSSize = 0;
+OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus()
+{
+    return pullOSStatus(collectOptions);
+}
 
-    TotalFSSize = std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
-        allFs.first().total,
-        [](const auto &total, const auto &fs) {return total + fs.total;});
+OS_UTILS::OS_STATUS OS_UTILS::OS_EVENTS::pullOSStatus(const OSCollectOptions &opt)
+{
+    struct sysinfo si;
+    if (sysinfo(&si) == -1)
+        throw std::runtime_error("failed to read sysinfo()");
+        
+    auto allFs = (opt & NO_FS) ? pullFSMAP() : FSMAP{};
 
-    FreeFSSize = std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
-        allFs.first().free,
-        [](const auto &free, const auto &fs) {return free + fs.free;});
+    size_t TotalFSSize = (opt & NO_FS) ?
+        std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
+            allFs.first().total,
+            [](const auto &total, const auto &fs) {return total + fs.total;}) : 0;
+
+    size_t FreeFSSize = (opt & NO_FS) ?
+        std::accumulate(std::next(allFs.cbegin()), allFs.cend(),
+            allFs.first().free,
+            [](const auto &free, const auto &fs) {return free + fs.free;}) : 0;
+    
+    auto allPs = (opt & NO_PS) ? pullPSMAP() : PSMAP{};
 
     return {
         .TotalFSSize = TotalFSSize,
         .FreeFSSize = FreeFSSize,
 
-        .cpuLoad = si.loads[0],
-        .psCount = si.procs,
-        .MemoryTotal = si.totalram,
-        .MemoryFree = si.freeram,
+        .cpuLoad = (opt & NO_PS) ? si.loads[0] : 0,
+        .psCount = (opt & NO_PS) ? si.procs : static_cast<ushort>(0),
+
+        .MemoryTotal = (opt & NO_MEM) ? si.totalram : 0,
+        .MemoryFree = (opt & NO_MEM) ? si.freeram : 0,
 
         .allFs = allFs,
         .allPs = allPs
@@ -84,6 +102,11 @@ uint OS_UTILS::OS_EVENTS::countPcpu(const struct proc_t * proc)
 void OS_UTILS::OS_EVENTS::pullOSStatusSlot()
 {
     emit pulledOSStatus(pullOSStatus());
+}
+
+void OS_UTILS::OS_EVENTS::setCollectOptions(const OSCollectOptions &_collectOptions)
+{
+    collectOptions = _collectOptions;
 }
 
 QDebug operator<<(QDebug debug, const OS_UTILS::OS_STATUS &stat)

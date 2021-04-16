@@ -76,6 +76,14 @@ class OS_EVENTS : public QObject
 {
     Q_OBJECT
 public:
+    enum OSCollectOptions
+    {
+        All = 0,
+        NO_FS = 1 << 1,
+        NO_MEM = 1 << 2,
+        NO_PS = 1 << 3
+    }; 
+
     explicit OS_EVENTS(QObject *parent = nullptr);
 
     void setTimer(int timer = 1000);
@@ -86,7 +94,10 @@ public:
      * \brief pullOSStatus - Вытягивает статуи системы
      * \return Статус системы
      */
-    static OS_STATUS pullOSStatus();
+    static OS_STATUS pullOSStatus(const OSCollectOptions &);
+    OS_STATUS pullOSStatus();
+    
+    void setCollectOptions(const OSCollectOptions &);
 
 signals:
     void pulledOSStatus(OS_STATUS);
@@ -96,7 +107,10 @@ public slots:
 
 private:
     QTimer evTimer{this};
+    OSCollectOptions collectOptions = OSCollectOptions::All;
 
+    static PSMAP pullPSMAP();
+    static FSMAP pullFSMAP();
     static uint countPcpu(const struct proc_t *);
 };
 
