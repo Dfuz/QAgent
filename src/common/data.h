@@ -17,7 +17,7 @@ struct CollectableData
     Utils::DataTypes dataType; // тип данных
     quint16 virtualId; // используется, чтобы отбрасывать дубликаты значений, которые могут быть отправлены в средах с плохой связью
     std::time_t clock = std::time(nullptr);
-    QVariantMap value;
+    QString value;
 
     const QJsonObject toJson() const
     {
@@ -27,7 +27,7 @@ struct CollectableData
             {"id", virtualId},
             {"data", dataType},
             {"clock", QString::number(clock)},
-            {"value", QJsonObject::fromVariantMap(value)}
+            {"value", value}
         };
     }
 };

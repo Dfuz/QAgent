@@ -16,6 +16,10 @@
 #include <map>
 
 using namespace std::chrono;
+using std::unique_ptr;
+using std::vector;
+using std::string;
+using std::map;
 
 class QAgent : public QObject
 {
@@ -33,8 +37,8 @@ private:
     inline static int compression;
     quint16 bufferSize = 100; // максимальное количество значений в буфере памяти
     std::chrono::seconds refreshActiveChecks{60s};
-    std::map<Utils::DataTypes, bool> collectData; // список собираемых значений
-    std::vector<Utils::CollectableData> dataArray; // список собранных значений
+    map<Utils::DataTypes, bool> collectData; // список собираемых значений
+    unique_ptr<vector<Utils::CollectableData>> dataArray; // список собранных значений
 
     // Методы
     void initSocket();

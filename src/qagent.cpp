@@ -21,6 +21,7 @@ void QAgent::readConfig(QString settings_path)
 
     if (!settings.value("BufferSize").isNull())
         bufferSize = settings.value("BufferSize").toUInt();
+    dataArray = std::make_unique<vector<Utils::CollectableData>>(bufferSize);
 
     if (!settings.value("RefreshActiveChecks").isNull())
         refreshActiveChecks = duration_cast<seconds>
@@ -29,9 +30,6 @@ void QAgent::readConfig(QString settings_path)
                                      .toString()
                                      )
                 );
-
-
-
 }
 
 bool QAgent::startListen()
