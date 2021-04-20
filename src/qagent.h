@@ -8,6 +8,8 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QCryptographicHash>
+#include <QTextCodec>
 #include <QDebug>
 #include <QTcpServer>
 #include <QTimer>
@@ -40,7 +42,7 @@ private:
     quint16 listenPort{0}; // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
     QHostAddress serverIP{QHostAddress::Null};
     QHostAddress listenIP{QHostAddress::LocalHost};
-    QString hostName{Utils::getMacAddress()}; // уникальное, регистрозависимое имя хоста
+    QString hostName; // уникальное, регистрозависимое имя хоста
     std::unique_ptr<Utils::QueryBuilder> query;
     QTcpServer localServer;
     inline static int compression;

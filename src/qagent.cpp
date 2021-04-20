@@ -23,8 +23,10 @@ void QAgent::readConfig(QString settings_path)
     if (!settings.value("ListenPort").isNull())
         listenPort = settings.value("ListenPort").toUInt();
 
-    if (!settings.value("HostName").isNull())
-        hostName = settings.value("HostName").toString();
+    if (settings.value("HostName").isNull())
+        hostName = QCryptographicHash::hash(Utils::getMacAddress().toUtf8(),
+                                            QCryptographicHash::Md4).toBase64();
+    else hostName = settings.value("HostName").toString();
 
     if (!settings.value("ListenIP").isNull())
         listenIP = QHostAddress{settings.value("ListenIP").toString()};
