@@ -6,15 +6,10 @@ list(APPEND OS_LIB_HEADERS
 list(APPEND OS_LIB_SOURCES
     os_utils.cpp)
 
-add_library(os_utils
+find_library(PROCPS procps)
+
+add_library(os_utils SHARED
     ${OS_LIB_HEADERS}
     ${OS_LIB_SOURCES})
 
-target_link_libraries(os_utils ${QT_MODULES})
-
-find_library(PROCPS procps)
-
-add_executable(os_test
-    os_test_main.cpp)
-
-target_link_libraries(os_test os_utils ${PROCPS})
+target_link_libraries(os_utils ${QT_MODULES} ${PROCPS})

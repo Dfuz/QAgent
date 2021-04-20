@@ -7,10 +7,6 @@ add_executable(QAgent
 
 include_directories(${TOP_DIR}/os_read_lib)
 
-find_library(OS_UTILS os_utils
-    HINTS ${CMAKE_BINARY_DIR}/os_read_lib)
-
 target_link_libraries(QAgent
     ${QT_MODULES}
-    ${OS_UTILS}
-    )
+    os_utils)
