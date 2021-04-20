@@ -31,7 +31,6 @@ void QAgent::readConfig(QString settings_path)
     if (!settings.value("ListenIP").isNull())
         listenIP = QHostAddress{settings.value("ListenIP").toString()};
 
-
     if (!settings.value("BufferSize").isNull())
         bufferSize = settings.value("BufferSize").toUInt();
     dataArray->reserve(bufferSize);

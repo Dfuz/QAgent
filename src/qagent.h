@@ -9,7 +9,6 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QCryptographicHash>
-#include <QTextCodec>
 #include <QDebug>
 #include <QTcpServer>
 #include <QTimer>
