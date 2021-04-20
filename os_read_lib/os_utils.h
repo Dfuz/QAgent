@@ -78,10 +78,9 @@ class OS_EVENTS : public QObject
 public:
     enum OSCollectOptions
     {
-        All = 1,
-        NO_FS = 1 << 1,
-        NO_MEM = 1 << 2,
-        NO_PS = 1 << 3
+        NO_FS = 1,          // 0b0001
+        NO_MEM = 1 << 1,    // 0b0010
+        NO_PS = 1 << 2      // 0b0100
     }; 
 
     explicit OS_EVENTS(QObject *parent = nullptr);
@@ -107,7 +106,7 @@ public slots:
 
 private:
     QTimer evTimer{this};
-    int collectOptions = OSCollectOptions::All;
+    int collectOptions = 0b000;
 
     static PSMAP pullPSMAP();
     static FSMAP pullFSMAP();

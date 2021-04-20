@@ -20,6 +20,15 @@ using std::unique_ptr;
 using std::vector;
 using std::string;
 using std::map;
+using collVec = vector<Utils::CollectableData>;
+
+// список собираемых значений
+static const map<QString, Utils::DataTypes> collectData =
+{
+    {"FileSystem", Utils::DataTypes::FileSystem},
+    {"Proccess", Utils::DataTypes::Process},
+    {"Memory", Utils::DataTypes::Memory}
+};
 
 class QAgent : public QObject
 {
@@ -31,14 +40,14 @@ private:
     quint16 listenPort{0}; // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
     QHostAddress serverIP{QHostAddress::Null};
     QHostAddress listenIP{QHostAddress::LocalHost};
-    QString hostName; // уникальное, регистрозависимое имя хоста
+    QString hostName{Utils::getMacAddress()}; // уникальное, регистрозависимое имя хоста
     std::unique_ptr<Utils::QueryBuilder> query;
     QTcpServer localServer;
     inline static int compression;
     quint16 bufferSize = 100; // максимальное количество значений в буфере памяти
     std::chrono::seconds refreshActiveChecks{60s};
-    map<Utils::DataTypes, bool> collectData; // список собираемых значений
-    unique_ptr<vector<Utils::CollectableData>> dataArray; // список собранных значений
+    unique_ptr<collVec> dataArray = std::make_unique<collVec>(); // список собранных значений
+    int confBitMask = 0b111;
 
     // Методы
     void initSocket();
@@ -55,6 +64,7 @@ public:
 
 private slots:
     bool performPassiveCheck();
+    bool performActiveCheck();
 signals:
 
 };

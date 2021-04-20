@@ -3,7 +3,6 @@
 
 QAgent::QAgent(QObject *parent) : QObject(parent)
 {
-    initSocket();
     timer.callOnTimeout(this, &QAgent::startCollectData);
 }
 
@@ -13,15 +12,27 @@ void QAgent::readConfig(QString settings_path)
 
     settings_path = settings.fileName();
 
+    // конфигурация для подключения к серверу
+    if (!settings.value("ServerPort").isNull())
+        serverPort = settings.value("ServerPort").toUInt();
+    if (!settings.value("ServerIP").isNull())
+        serverIP = QHostAddress{settings.value("ServerIP").toString()};
+    if (!serverIP.isNull() and serverPort)
+        initSocket();
+
     if (!settings.value("ListenPort").isNull())
         listenPort = settings.value("ListenPort").toUInt();
+
+    if (!settings.value("HostName").isNull())
+        hostName = settings.value("HostName").toString();
 
     if (!settings.value("ListenIP").isNull())
         listenIP = QHostAddress{settings.value("ListenIP").toString()};
 
+
     if (!settings.value("BufferSize").isNull())
         bufferSize = settings.value("BufferSize").toUInt();
-    dataArray = std::make_unique<vector<Utils::CollectableData>>(bufferSize);
+    dataArray->reserve(bufferSize);
 
     if (!settings.value("RefreshActiveChecks").isNull())
         refreshActiveChecks = duration_cast<seconds>
@@ -30,6 +41,17 @@ void QAgent::readConfig(QString settings_path)
                                      .toString()
                                      )
                 );
+
+    // "Configuration" : ["Memory", "Proccess", "FileSystem"],
+    if (!settings.value("Configuration").isNull())
+    {
+        auto confMap = settings.value("Configuration").toList();
+        for (const auto& now : confMap)
+        {
+            if (collectData.find(now.toString()) != end(collectData))
+                confBitMask &= collectData.at(now.toString());
+        }
+    }
 }
 
 bool QAgent::startListen()
@@ -58,12 +80,16 @@ void QAgent::setCompression(int newCompress)
 bool QAgent::performPassiveCheck()
 {
     // TODO
-
-
     return false;
 }
 
-void QAgent::initSocket()
+bool QAgent::performActiveCheck()
+{
+    // TODO
+    return false;
+}
+
+inline void QAgent::initSocket()
 {
     auto tcpSocket = std::make_shared<QTcpSocket>();
     tcpSocket->connectToHost(serverIP, serverPort);

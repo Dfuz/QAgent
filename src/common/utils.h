@@ -6,12 +6,16 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QRegularExpression>
+#include <QtNetwork>
 #include <QDebug>
 
 namespace Utils {
 
-enum DataTypes {
- // TODO
+enum DataTypes
+{
+    FileSystem = 0b110,
+    Process = 0b101,
+    Memory = 0b011
 };
 
 inline bool readJsonFile(QIODevice &device, QSettings::SettingsMap &map)
@@ -60,6 +64,16 @@ inline std::chrono::milliseconds parseTime(const QString& input)
     time += std::chrono::seconds{s.match(input).captured().left(1).toInt()};
     time += std::chrono::milliseconds{ms.match(input).captured().left(2).toInt()};
     return time;
+}
+
+inline QString getMacAddress()
+{
+    foreach(QNetworkInterface netInterface, QNetworkInterface::allInterfaces())
+    {
+        if (!(netInterface.flags() & QNetworkInterface::IsLoopBack))
+            return netInterface.hardwareAddress();
+    }
+    return QString();
 }
 
 }
