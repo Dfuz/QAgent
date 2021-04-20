@@ -14,20 +14,20 @@ namespace Utils
 struct CollectableData
 {
     QString hostName; // видимое имя узла сети, которому принадлежит элемент данных
-    Utils::DataTypes dataType; // тип данных
+    QString keyData; // тип данных
+    QVariant value;
     quint16 virtualId; // используется, чтобы отбрасывать дубликаты значений, которые могут быть отправлены в средах с плохой связью
     std::time_t clock = std::time(nullptr);
-    QString value;
 
     const QJsonObject toJson() const
     {
         return
         {
             {"hostname", hostName},
+            {"key", keyData},
+            {"value", value.toString()},
             {"id", virtualId},
-            {"data", dataType},
-            {"clock", QString::number(clock)},
-            {"value", value}
+            {"clock", QString::number(clock)}
         };
     }
 };

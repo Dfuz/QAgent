@@ -97,9 +97,105 @@ inline void QAgent::initSocket()
     query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
 }
 
+collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
+{
+    collVec localVec;
+    auto counter = static_cast<quint16>(dataArray->size());
+    if (Utils::DataTypes::FileSystem & confBitMask)
+    {
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("TotalFSSize"),
+                        (quint64)status.TotalFSSize,
+                        counter++,
+                    }
+                );
+
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("FreeFSSize"),
+                        (quint64)status.FreeFSSize,
+                        counter++,
+                    }
+                );
+
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("FSMountPointsCount"),
+                        status.allFs.count(),
+                        counter++,
+                    }
+                );
+    }
+
+    if (Utils::DataTypes::Memory & confBitMask)
+    {
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("MemoryTotal"),
+                        (quint64)status.MemoryTotal,
+                        counter++,
+                    }
+                );
+
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("MemoryFree"),
+                        (quint64)status.MemoryFree,
+                        counter++,
+                    }
+                );
+    }
+
+    if (Utils::DataTypes::Process & confBitMask)
+    {
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("cpuLoad"),
+                        (quint64)status.cpuLoad,
+                        counter++,
+                    }
+                );
+
+        localVec.push_back
+                (
+                    {
+                        this->hostName,
+                        QString("psCount"),
+                        (quint64)status.psCount,
+                        counter++,
+                    }
+                );
+    }
+    return localVec;
+}
+
 void QAgent::startCollectData()
 {
+    auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
+    auto localArray = toCollVec(dataStruct);
 
+    for (auto const& it : localArray)
+    {
+        if (dataArray->size() >= dataArray->capacity())
+        {
+            performActiveCheck();
+            dataArray->clear();
+        }
+        dataArray->push_back(it);
+    }
 }
 
 void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)

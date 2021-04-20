@@ -55,6 +55,8 @@ private:
     void initSocket();
     void startCollectData();
     void performHandshake(std::shared_ptr<Utils::QueryBuilder> _query);
+    collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
+
 public:
     explicit QAgent(QObject *parent = nullptr);
     void readConfig(QString settings_path = "conf.json");
