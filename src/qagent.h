@@ -4,6 +4,7 @@
 #include "common/querybuilder.h"
 #include "common/utils.h"
 #include "common/data.h"
+#include "os_utils.h"
 
 #include <QObject>
 #include <QTcpSocket>
