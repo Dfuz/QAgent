@@ -78,9 +78,9 @@ class OS_EVENTS : public QObject
 public:
     enum OSCollectOptions
     {
-        NO_FS = 1,          // 0b0001
-        NO_MEM = 1 << 1,    // 0b0010
-        NO_PS = 1 << 2      // 0b0100
+        NO_FS  = 0b001,
+        NO_MEM = 0b100,
+        NO_PS  = 0b010
     }; 
 
     explicit OS_EVENTS(QObject *parent = nullptr);

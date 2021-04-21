@@ -10,6 +10,8 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QCryptographicHash>
+#include <Qt>
+#include <QTextStream>
 #include <QDebug>
 #include <QTcpServer>
 #include <QTimer>
@@ -28,7 +30,7 @@ using collVec = vector<Utils::CollectableData>;
 static const map<QString, Utils::DataTypes> collectData =
 {
     {"FileSystem", Utils::DataTypes::FileSystem},
-    {"Proccess", Utils::DataTypes::Process},
+    {"Process", Utils::DataTypes::Process},
     {"Memory", Utils::DataTypes::Memory}
 };
 
@@ -38,24 +40,25 @@ class QAgent : public QObject
 private:
     // Поля
     QTimer timer;
-    quint16 serverPort{0};
-    quint16 listenPort{0}; // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
-    QHostAddress serverIP{QHostAddress::Null};
-    QHostAddress listenIP{QHostAddress::LocalHost};
-    QString hostName; // уникальное, регистрозависимое имя хоста
-    std::unique_ptr<Utils::QueryBuilder> query;
-    QTcpServer localServer;
-    inline static int compression;
-    quint16 bufferSize = 100; // максимальное количество значений в буфере памяти
-    std::chrono::milliseconds refreshActiveChecks{60s};
+    QString hostName;           // уникальное, регистрозависимое имя хоста
+    quint16 serverPort{0};      // порт сервера
+    quint16 listenPort{10050};  // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
+    quint16 bufferSize = 100;   // максимальное количество значений в буфере памяти
+    QHostAddress serverIP{QHostAddress::Null};      // адрес сервера для активных проверок
+    QHostAddress listenIP{QHostAddress::LocalHost}; // адрес, который должен слушать агент
+    unique_ptr<Utils::QueryBuilder> query;
+    unique_ptr<QTcpServer> localServer; // локальный сервер для пассивных проверок
     unique_ptr<collVec> dataArray = std::make_unique<collVec>(); // список собранных значений
-    int confBitMask = 0b111;
+    std::chrono::milliseconds refreshActiveChecks{60s};
+    int confBitMask = 0b111; // маска конфигурации (какие параметры считывать)
+    inline static int compression;
 
     // Методы
     void initSocket();
     void startCollectData();
     void performHandshake(std::shared_ptr<Utils::QueryBuilder> _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
+    void initLocalServer();
 
 public:
     explicit QAgent(QObject *parent = nullptr);
@@ -70,7 +73,6 @@ private slots:
     bool performPassiveCheck();
     bool performActiveCheck();
 signals:
-
 };
 
 #endif // QAGENT_H

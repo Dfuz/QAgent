@@ -6,6 +6,18 @@ QAgent::QAgent(QObject *parent) : QObject(parent)
     timer.callOnTimeout(this, &QAgent::startCollectData);
 }
 
+inline void QAgent::initLocalServer()
+{
+    localServer = std::make_unique<QTcpServer>(this);
+
+    if (!localServer->listen(listenIP, listenPort))
+    {
+        qCritical() << "Unable to start local server!" << Qt::endl;
+        //std::cerr << localServer->errorString();
+        localServer.reset(nullptr);
+    }
+}
+
 void QAgent::readConfig(QString settings_path)
 {
     QSettings settings(settings_path, Utils::JsonFormat);
@@ -20,16 +32,21 @@ void QAgent::readConfig(QString settings_path)
     if (!serverIP.isNull() and serverPort)
         initSocket();
 
+    // конфигурация для пассивных проверок
     if (!settings.value("ListenPort").isNull())
         listenPort = settings.value("ListenPort").toUInt();
+    if (!settings.value("ListenIP").isNull())
+    {
+        listenIP = QHostAddress{settings.value("ListenIP").toString()};
+        initLocalServer();
+    }
 
+    // если имя хоста не задано, то в качестве имени будет взят хэш от мак-адреса
     if (settings.value("HostName").isNull())
         hostName = QCryptographicHash::hash(Utils::getMacAddress().toUtf8(),
                                             QCryptographicHash::Md4).toBase64();
     else hostName = settings.value("HostName").toString();
 
-    if (!settings.value("ListenIP").isNull())
-        listenIP = QHostAddress{settings.value("ListenIP").toString()};
 
     if (!settings.value("BufferSize").isNull())
         bufferSize = settings.value("BufferSize").toUInt();
@@ -54,9 +71,9 @@ void QAgent::readConfig(QString settings_path)
 
 bool QAgent::startListen()
 {
-    connect(&localServer, &QTcpServer::newConnection, this, &QAgent::performPassiveCheck);
+    connect(localServer.get(), &QTcpServer::newConnection, this, &QAgent::performPassiveCheck);
 
-    if (!localServer.listen(listenIP, listenPort))
+    if (!localServer->listen(listenIP, listenPort))
     {
         qDebug() << "Unable to start listen";
         return false;
@@ -94,11 +111,45 @@ inline void QAgent::initSocket()
     query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
 }
 
+
+void QAgent::startCollectData()
+{
+    auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
+    auto localArray = toCollVec(dataStruct);
+
+    for (auto const& it : localArray)
+    {
+        if (dataArray->size() >= dataArray->capacity())
+        {
+            performActiveCheck();
+            dataArray->clear();
+        }
+        dataArray->push_back(it);
+    }
+}
+
+void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
+{
+    auto message = Utils::HandshakeMessage{R"({"who":"agent"})"};
+    auto msg = _query->makeQueryRead()
+           .toGet<Utils::Handshake>()
+           .toSend(message)
+           .invoke();
+    if (msg)
+    {
+        QAgent::setCompression(msg->compressionLevel);
+    }
+}
+
+// 0b110 - FileSystem
+// &
+// 0b001
+
 collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
 {
     collVec localVec;
     auto counter = static_cast<quint16>(dataArray->size());
-    if (!(Utils::DataTypes::FileSystem & confBitMask))
+    if ((Utils::DataTypes::FileSystem & confBitMask) == confBitMask)
     {
         localVec.push_back
                 (
@@ -131,7 +182,7 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                 );
     }
 
-    if (!(Utils::DataTypes::Memory & confBitMask))
+    if ((Utils::DataTypes::Memory & confBitMask) == confBitMask)
     {
         localVec.push_back
                 (
@@ -154,7 +205,7 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                 );
     }
 
-    if (!(Utils::DataTypes::Process & confBitMask))
+    if ((Utils::DataTypes::Process & confBitMask) == confBitMask)
     {
         localVec.push_back
                 (
@@ -177,33 +228,4 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                 );
     }
     return localVec;
-}
-
-void QAgent::startCollectData()
-{
-    auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
-    auto localArray = toCollVec(dataStruct);
-
-    for (auto const& it : localArray)
-    {
-        if (dataArray->size() >= dataArray->capacity())
-        {
-            performActiveCheck();
-            dataArray->clear();
-        }
-        dataArray->push_back(it);
-    }
-}
-
-void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
-{
-    auto message = Utils::HandshakeMessage{R"({"who":"agent"})"};
-    auto msg = _query->makeQueryRead()
-           .toGet<Utils::Handshake>()
-           .toSend(message)
-           .invoke();
-    if (msg)
-    {
-        QAgent::setCompression(msg->compressionLevel);
-    }
 }

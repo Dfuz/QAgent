@@ -33,9 +33,9 @@ OS_UTILS::FSMAP OS_UTILS::OS_EVENTS::pullFSMAP()
     if (!mounts.open(QFile::ReadOnly | QFile::Text))
         throw std::runtime_error("failed to read /proc/mounts");
 
-    auto mounts_parsed = QString{mounts.readAll()}.split('\n', QString::SkipEmptyParts);
+    auto mounts_parsed = QString{mounts.readAll()}.split('\n', Qt::SkipEmptyParts);
     for(const auto &line : mounts_parsed) {
-        auto parts = line.split(' ', QString::SkipEmptyParts);
+        auto parts = line.split(' ', Qt::SkipEmptyParts);
         if (!parts[1].startsWith('/')) continue;
         if (statfs(parts[1].toStdString().c_str(), &fs) == -1) continue;
         allFs.insert(parts[0], {
