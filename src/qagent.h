@@ -47,7 +47,7 @@ private:
     QTcpServer localServer;
     inline static int compression;
     quint16 bufferSize = 100; // максимальное количество значений в буфере памяти
-    std::chrono::seconds refreshActiveChecks{60s};
+    std::chrono::milliseconds refreshActiveChecks{60s};
     unique_ptr<collVec> dataArray = std::make_unique<collVec>(); // список собранных значений
     int confBitMask = 0b111;
 

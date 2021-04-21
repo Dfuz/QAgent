@@ -35,14 +35,6 @@ void QAgent::readConfig(QString settings_path)
         bufferSize = settings.value("BufferSize").toUInt();
     dataArray->reserve(bufferSize);
 
-    if (!settings.value("RefreshActiveChecks").isNull())
-        refreshActiveChecks = duration_cast<seconds>
-                (
-                    Utils::parseTime(settings.value("RefreshActiveChecks")
-                                     .toString()
-                                     )
-                );
-
     // "Configuration" : ["Memory", "Proccess", "FileSystem"],
     if (!settings.value("Configuration").isNull())
     {
@@ -53,6 +45,11 @@ void QAgent::readConfig(QString settings_path)
                 confBitMask &= collectData.at(now.toString());
         }
     }
+
+    if (!settings.value("RefreshActiveChecks").isNull())
+        refreshActiveChecks = Utils::parseTime(settings.value("RefreshActiveChecks")
+                                    .toString());
+    timer.start(refreshActiveChecks);
 }
 
 bool QAgent::startListen()
@@ -101,7 +98,7 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
 {
     collVec localVec;
     auto counter = static_cast<quint16>(dataArray->size());
-    if (Utils::DataTypes::FileSystem & confBitMask)
+    if (!(Utils::DataTypes::FileSystem & confBitMask))
     {
         localVec.push_back
                 (
@@ -134,7 +131,7 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                 );
     }
 
-    if (Utils::DataTypes::Memory & confBitMask)
+    if (!(Utils::DataTypes::Memory & confBitMask))
     {
         localVec.push_back
                 (
@@ -157,7 +154,7 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                 );
     }
 
-    if (Utils::DataTypes::Process & confBitMask)
+    if (!(Utils::DataTypes::Process & confBitMask))
     {
         localVec.push_back
                 (
