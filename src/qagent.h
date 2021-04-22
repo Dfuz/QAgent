@@ -54,11 +54,11 @@ private:
     inline static int compression;
 
     // Методы
-    void initSocket();          // инициализация и запуск локального сервера
+    void initSocket();          // инициализация сокета для активных проверок
+    bool startListen();         // инициализация и запуск локального сервера
     void startCollectData();    // начать сбор данных (активные проверки)
     void performHandshake(std::shared_ptr<Utils::QueryBuilder> _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
-    bool startListen();
 
 public:
     explicit QAgent(QObject *parent = nullptr);
