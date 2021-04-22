@@ -29,7 +29,7 @@ void QAgent::readConfig(QString settings_path)
 
     // если имя хоста не задано, то в качестве имени будет взят хэш от мак-адреса
     if (settings.value("HostName").isNull())
-        hostName = QCryptographicHash::hash(Utils::getMacAddress().toUtf8(),
+        hostName = QCryptographicHash::hash(macAddress.toUtf8(),
                                             QCryptographicHash::Md4).toBase64();
     else hostName = settings.value("HostName").toString();
 
@@ -176,7 +176,12 @@ void QAgent::startCollectData()
 
 void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
 {
-    auto message = Utils::HandshakeMessage{R"({"who":"agent"})"};
+    QVariantMap payload
+    {
+        {"who", "agent"},
+        {"macaddress", Utils::getMacAddress()}
+    };
+    auto message = Utils::HandshakeMessage{payload};
     auto msg = _query->makeQueryRead()
            .toGet<Utils::Handshake>()
            .toSend(message)

@@ -54,6 +54,7 @@ private:
     std::chrono::milliseconds refreshActiveChecks{60s};             // значение таймера для активных проверок
     int confBitMask = 0b111; // маска конфигурации (какие параметры считывать)
     inline static int compression;
+    QString macAddress{Utils::getMacAddress()};
 
     // Методы
     void openSocket();          // инициализация сокета для активных проверок
