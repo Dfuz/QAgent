@@ -127,8 +127,9 @@ bool QAgent::performActiveCheck()
         if (!response.has_value())
             return false;
     }
-    if (response->request == QString("success"))
+    if (response->response == QString("success"))
         qDebug() << "Success response" << Qt::endl;
+    else qWarning() << "Something went wrong! Server response: " << response->response << Qt::endl;
 
     closeSocket();
     return true;

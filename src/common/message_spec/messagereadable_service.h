@@ -9,7 +9,7 @@ namespace Utils
 template<>
 struct ReadableMessage<Utils::Service>
 {
-   QString request;
+   QString response;
 
     static std::optional<ReadableMessage<Utils::Service>> parseJson(const QByteArray &data) noexcept
     {
@@ -21,7 +21,7 @@ struct ReadableMessage<Utils::Service>
 
         if(!obj->contains("request"))
             return std::nullopt;
-        retval.request = obj->value("request").toString();
+        retval.response = obj->value("request").toString();
 
         return retval;
     }    
