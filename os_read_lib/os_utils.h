@@ -79,8 +79,8 @@ public:
     enum OSCollectOptions
     {
         NO_FS  = 0b001,
-        NO_MEM = 0b100,
-        NO_PS  = 0b010
+        NO_MEM = 0b010,
+        NO_PS  = 0b100
     }; 
 
     explicit OS_EVENTS(QObject *parent = nullptr);

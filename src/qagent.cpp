@@ -6,18 +6,6 @@ QAgent::QAgent(QObject *parent) : QObject(parent)
     timer.callOnTimeout(this, &QAgent::startCollectData);
 }
 
-inline void QAgent::initLocalServer()
-{
-    localServer = std::make_unique<QTcpServer>(this);
-
-    if (!localServer->listen(listenIP, listenPort))
-    {
-        qCritical() << "Unable to start local server!" << Qt::endl;
-        //std::cerr << localServer->errorString();
-        localServer.reset(nullptr);
-    }
-}
-
 void QAgent::readConfig(QString settings_path)
 {
     QSettings settings(settings_path, Utils::JsonFormat);
@@ -38,7 +26,7 @@ void QAgent::readConfig(QString settings_path)
     if (!settings.value("ListenIP").isNull())
     {
         listenIP = QHostAddress{settings.value("ListenIP").toString()};
-        initLocalServer();
+        startListen();
     }
 
     // если имя хоста не задано, то в качестве имени будет взят хэш от мак-адреса
@@ -71,11 +59,13 @@ void QAgent::readConfig(QString settings_path)
 
 bool QAgent::startListen()
 {
+    localServer = std::make_unique<QTcpServer>(this);
     connect(localServer.get(), &QTcpServer::newConnection, this, &QAgent::performPassiveCheck);
 
     if (!localServer->listen(listenIP, listenPort))
     {
-        qDebug() << "Unable to start listen";
+        qCritical() << "Unable to start local server!" << Qt::endl;
+        localServer.reset(nullptr);
         return false;
     }
     qDebug() << "Listening started";
@@ -140,10 +130,6 @@ void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
         QAgent::setCompression(msg->compressionLevel);
     }
 }
-
-// 0b110 - FileSystem
-// &
-// 0b001
 
 collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
 {

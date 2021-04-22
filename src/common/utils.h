@@ -13,9 +13,9 @@ namespace Utils {
 
 enum DataTypes
 {
-    FileSystem = 0b110,
-    Process = 0b101,
-    Memory = 0b011
+    FileSystem  =   0b110,
+    Memory      =   0b101,
+    Process     =   0b011
 };
 
 inline bool readJsonFile(QIODevice &device, QSettings::SettingsMap &map)

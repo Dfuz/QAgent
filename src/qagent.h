@@ -47,23 +47,22 @@ private:
     QHostAddress serverIP{QHostAddress::Null};      // адрес сервера для активных проверок
     QHostAddress listenIP{QHostAddress::LocalHost}; // адрес, который должен слушать агент
     unique_ptr<Utils::QueryBuilder> query;
-    unique_ptr<QTcpServer> localServer; // локальный сервер для пассивных проверок
-    unique_ptr<collVec> dataArray = std::make_unique<collVec>(); // список собранных значений
-    std::chrono::milliseconds refreshActiveChecks{60s};
+    unique_ptr<QTcpServer> localServer;                             // локальный сервер для пассивных проверок
+    unique_ptr<collVec> dataArray = std::make_unique<collVec>();    // список собранных значений
+    std::chrono::milliseconds refreshActiveChecks{60s};             // значение таймера для активных проверок
     int confBitMask = 0b111; // маска конфигурации (какие параметры считывать)
     inline static int compression;
 
     // Методы
-    void initSocket();
-    void startCollectData();
+    void initSocket();          // инициализация и запуск локального сервера
+    void startCollectData();    // начать сбор данных (активные проверки)
     void performHandshake(std::shared_ptr<Utils::QueryBuilder> _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
-    void initLocalServer();
+    bool startListen();
 
 public:
     explicit QAgent(QObject *parent = nullptr);
     void readConfig(QString settings_path = "conf.json");
-    bool startListen();
     void init();
     static int getCompression(void);
     static void setCompression(int newCompress);
