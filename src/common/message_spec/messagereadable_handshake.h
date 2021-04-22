@@ -12,8 +12,8 @@ template<>
 struct ReadableMessage<Utils::Handshake>
 {
     QString who;
+    QString hostname;
     int compressionLevel;
-    QHostAddress hostname;
 
     static std::optional<ReadableMessage<Utils::Handshake>> parseJson(const QByteArray &data) noexcept
     {
@@ -25,8 +25,7 @@ struct ReadableMessage<Utils::Handshake>
         
         if (!obj->contains("who")) return std::nullopt;
         retval.who = obj->value("who").toString();
-
-        retval.hostname = QHostAddress{obj->value("hostname").toString("")};
+        retval.hostname = obj->value("hostname").toString();
         retval.compressionLevel = obj->value("compression").toInt(0);
 
         return retval;
