@@ -10,6 +10,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QCryptographicHash>
+#include <QJsonArray>
 #include <Qt>
 #include <QTextStream>
 #include <QDebug>
@@ -21,6 +22,7 @@
 
 using namespace std::chrono;
 using std::unique_ptr;
+using std::shared_ptr;
 using std::vector;
 using std::string;
 using std::map;
@@ -54,10 +56,11 @@ private:
     inline static int compression;
 
     // Методы
-    void initSocket();          // инициализация сокета для активных проверок
+    void openSocket();          // инициализация сокета для активных проверок
+    void closeSocket();         // закрытие сокеты
     bool startListen();         // инициализация и запуск локального сервера
     void startCollectData();    // начать сбор данных (активные проверки)
-    void performHandshake(std::shared_ptr<Utils::QueryBuilder> _query);
+    void performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
 
 public:

@@ -17,8 +17,6 @@ void QAgent::readConfig(QString settings_path)
         serverPort = settings.value("ServerPort").toUInt();
     if (!settings.value("ServerIP").isNull())
         serverIP = QHostAddress{settings.value("ServerIP").toString()};
-    if (!serverIP.isNull() and serverPort)
-        initSocket();
 
     // конфигурация для пассивных проверок
     if (!settings.value("ListenPort").isNull())
@@ -64,11 +62,13 @@ bool QAgent::startListen()
 
     if (!localServer->listen(listenIP, listenPort))
     {
-        qCritical() << "Unable to start local server!" << Qt::endl;
+        qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                    << "Unable to start local server!" << Qt::endl;
         localServer.reset(nullptr);
         return false;
     }
-    qDebug() << "Listening started";
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Listening started" << Qt::endl;
     return true;
 }
 
@@ -90,20 +90,72 @@ bool QAgent::performPassiveCheck()
 
 bool QAgent::performActiveCheck()
 {
-    // TODO
-    return false;
+    // попытка подключиться к серверу
+    openSocket();
+    if (!query)
+    {
+        qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                    << "No connection to server" << Qt::endl;
+        return false;
+    }
+    performHandshake(query);
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                << "Connected to server" << Qt::endl;
+
+    // подготовка сообщения
+    QJsonArray jsonArray;
+    for (auto const& it : *dataArray)
+        jsonArray.push_back(it.toJson());
+    QVariantMap payload
+    {
+        std::pair{"request", "agent data"},
+        std::pair{"data", jsonArray},
+        std::pair{"clock", QString::number(std::time(nullptr))}
+    };
+    auto message = Utils::DataMessage{payload};
+    auto response = query->makeQuery()
+                          .toGet<Utils::Service>()
+                          .toSend(message)
+                          .invoke();
+    if (!response.has_value())
+    {
+        qWarning() << "No response from server! Trying again..." << Qt::endl;
+        auto response = query->makeQuery()
+                              .toGet<Utils::Service>()
+                              .toSend(message)
+                              .invoke();
+        if (!response.has_value())
+            return false;
+    }
+    if (response->request == QString("success"))
+        qDebug() << "Success response" << Qt::endl;
+
+    closeSocket();
+    return true;
 }
 
-inline void QAgent::initSocket()
+inline void QAgent::openSocket()
 {
-    auto tcpSocket = std::make_shared<QTcpSocket>();
-    tcpSocket->connectToHost(serverIP, serverPort);
-    query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
+    if (!serverIP.isNull() and serverPort)
+    {
+        auto tcpSocket = std::make_shared<QTcpSocket>();
+        tcpSocket->connectToHost(serverIP, serverPort);
+        if (tcpSocket->waitForConnected())
+            query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
+        else qWarning() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                        << "Unable connect to server!" << Qt::endl;
+    }
 }
 
+inline void QAgent::closeSocket()
+{
+    query.reset(nullptr);
+}
 
 void QAgent::startCollectData()
 {
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Data collection started" << Qt::endl;
     auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
     auto localArray = toCollVec(dataStruct);
 
@@ -116,9 +168,12 @@ void QAgent::startCollectData()
         }
         dataArray->push_back(it);
     }
+
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Data collection ended" << Qt::endl;
 }
 
-void QAgent::performHandshake(std::shared_ptr<Utils::QueryBuilder> _query)
+void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
 {
     auto message = Utils::HandshakeMessage{R"({"who":"agent"})"};
     auto msg = _query->makeQueryRead()
