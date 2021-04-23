@@ -19,9 +19,9 @@ struct ReadableMessage<Utils::Service>
 
         ReadableMessage<Utils::Service> retval{};
 
-        if(!obj->contains("request"))
+        if(!obj->contains("response"))
             return std::nullopt;
-        retval.response = obj->value("request").toString();
+        retval.response = obj->value("response").toString();
 
         return retval;
     }    

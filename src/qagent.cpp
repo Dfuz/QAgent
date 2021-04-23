@@ -54,7 +54,7 @@ void QAgent::readConfig(QString settings_path)
 void QAgent::startAgent()
 {
     timer.start(refreshActiveChecks);
-    if (serverIP != QHostAddress::Null or serverPort != 0)
+    if (serverIP != QHostAddress::Null)
         startListen();
 }
 
