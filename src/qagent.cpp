@@ -131,14 +131,14 @@ bool QAgent::performActiveCheck()
     // отправка сообщения
     auto response = query->makeQuery()
                           .toGet<Utils::Service>()
-                          .toSend(message)
+                          .toSend(message, compression)
                           .invoke();
     if (!response.has_value())
     {
         qWarning() << "Something went wrong! Trying send message again...";
         response = query->makeQuery()
                          .toGet<Utils::Service>()
-                         .toSend(message)
+                         .toSend(message, compression)
                          .invoke();
         if (!response.has_value())
         {
