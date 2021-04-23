@@ -96,6 +96,7 @@ bool QAgent::performActiveCheck()
     {
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
                     << "No connection to server" << Qt::endl;
+        closeSocket();
         return false;
     }
     performHandshake(query);
@@ -125,7 +126,10 @@ bool QAgent::performActiveCheck()
                               .toSend(message)
                               .invoke();
         if (!response.has_value())
+        {
+            closeSocket();
             return false;
+        }
     }
     if (response->response == QString("success"))
         qDebug() << "Success response" << Qt::endl;
