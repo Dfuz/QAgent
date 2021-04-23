@@ -47,7 +47,7 @@ private:
     quint16 listenPort{10050};  // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
     quint16 bufferSize = 100;   // максимальное количество значений в буфере памяти
     QHostAddress serverIP{QHostAddress::Null};      // адрес сервера для активных проверок
-    QHostAddress listenIP{QHostAddress::LocalHost}; // адрес, который должен слушать агент
+    QHostAddress listenIP{QHostAddress::Null}; // адрес, который должен слушать агент
     unique_ptr<Utils::QueryBuilder> query;
     unique_ptr<QTcpServer> localServer;                             // локальный сервер для пассивных проверок
     unique_ptr<collVec> dataArray = std::make_unique<collVec>();    // список собранных значений

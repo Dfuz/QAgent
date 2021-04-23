@@ -54,8 +54,15 @@ void QAgent::readConfig(QString settings_path)
 void QAgent::startAgent()
 {
     timer.start(refreshActiveChecks);
-    if (serverIP != QHostAddress::Null)
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Active checks started!";
+
+    if (listenIP != QHostAddress::Null)
+    {
         startListen();
+        qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                 << "Passive checks started!";
+    }
 }
 
 bool QAgent::startListen()
@@ -156,7 +163,7 @@ inline void QAgent::closeSocket()
 void QAgent::startCollectData()
 {
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Data collection started" << Qt::endl;
+             << "Data collection started" << Qt::flush;
     auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
     auto localArray = toCollVec(dataStruct);
 
@@ -171,7 +178,7 @@ void QAgent::startCollectData()
     }
 
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Data collection ended" << Qt::endl;
+             << "Data collection ended" << Qt::flush;
 }
 
 void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
