@@ -67,6 +67,7 @@ private:
 public:
     explicit QAgent(QObject *parent = nullptr);
     void readConfig(QString settings_path = "conf.json");
+    void startAgent();
     void init();
     static int getCompression(void);
     static void setCompression(int newCompress);

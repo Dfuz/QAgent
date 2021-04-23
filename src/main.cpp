@@ -7,8 +7,7 @@ int main(int argc, char *argv[])
 
     QAgent agent;
     agent.readConfig();
-    //agent.startListen();
-
+    agent.startAgent();
 
     return a.exec();
 }

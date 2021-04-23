@@ -22,10 +22,7 @@ void QAgent::readConfig(QString settings_path)
     if (!settings.value("ListenPort").isNull())
         listenPort = settings.value("ListenPort").toUInt();
     if (!settings.value("ListenIP").isNull())
-    {
         listenIP = QHostAddress{settings.value("ListenIP").toString()};
-        startListen();
-    }
 
     // если имя хоста не задано, то в качестве имени будет взят хэш от мак-адреса
     if (settings.value("HostName").isNull())
@@ -52,7 +49,13 @@ void QAgent::readConfig(QString settings_path)
     if (!settings.value("RefreshActiveChecks").isNull())
         refreshActiveChecks = Utils::parseTime(settings.value("RefreshActiveChecks")
                                     .toString());
+}
+
+void QAgent::startAgent()
+{
     timer.start(refreshActiveChecks);
+    if (serverIP != QHostAddress::Null or serverPort != 0)
+        startListen();
 }
 
 bool QAgent::startListen()
@@ -63,12 +66,12 @@ bool QAgent::startListen()
     if (!localServer->listen(listenIP, listenPort))
     {
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                    << "Unable to start local server!" << Qt::endl;
+                    << "Unable to start local server!" << Qt::flush;
         localServer.reset(nullptr);
         return false;
     }
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Listening started" << Qt::endl;
+             << "Listening started";
     return true;
 }
 
@@ -95,13 +98,13 @@ bool QAgent::performActiveCheck()
     if (!query)
     {
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                    << "No connection to server" << Qt::endl;
+                    << "No connection to server" << Qt::flush;
         closeSocket();
         return false;
     }
     performHandshake(query);
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                << "Connected to server" << Qt::endl;
+                << "Connected to server";
 
     // подготовка сообщения
     QJsonArray jsonArray;
@@ -120,13 +123,13 @@ bool QAgent::performActiveCheck()
                           .invoke();
     if (!response.has_value())
     {
-        qWarning() << "Something went wrong!.." << Qt::endl;
+        qWarning() << "Something went wrong!..";
         closeSocket();
         return false;
     }
     if (response->response == QString("success"))
-        qDebug() << "Success response" << Qt::endl;
-    else qWarning() << "Something went wrong! Server response: " << response->response << Qt::endl;
+        qDebug() << "Success response";
+    else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
 
     closeSocket();
     return true;
@@ -141,7 +144,7 @@ inline void QAgent::openSocket()
         if (tcpSocket->waitForConnected())
             query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
         else qWarning() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                        << "Unable connect to server!" << Qt::endl;
+                        << "Unable connect to server!" << Qt::flush;
     }
 }
 
