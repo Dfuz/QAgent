@@ -120,16 +120,9 @@ bool QAgent::performActiveCheck()
                           .invoke();
     if (!response.has_value())
     {
-        qWarning() << "No response from server! Trying again..." << Qt::endl;
-        auto response = query->makeQuery()
-                              .toGet<Utils::Service>()
-                              .toSend(message)
-                              .invoke();
-        if (!response.has_value())
-        {
-            closeSocket();
-            return false;
-        }
+        qWarning() << "Something went wrong!.." << Qt::endl;
+        closeSocket();
+        return false;
     }
     if (response->response == QString("success"))
         qDebug() << "Success response" << Qt::endl;
