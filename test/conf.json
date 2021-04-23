@@ -1,0 +1,7 @@
+{
+    "ServerIP" : "127.0.0.1",
+    "ServerPort" : 1234,
+    "RefreshActiveChecks" : "10s",
+    "BufferSize" : 20,
+    "Configuration" : ["FileSystem", "Memory", "Proccess"]
+}
