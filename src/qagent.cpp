@@ -135,9 +135,18 @@ bool QAgent::performActiveCheck()
                           .invoke();
     if (!response.has_value())
     {
-        qWarning() << "Something went wrong!..";
-        closeSocket();
-        return false;
+        qWarning() << "Something went wrong! Trying send message again...";
+        response = query->makeQuery()
+                         .toGet<Utils::Service>()
+                         .toSend(message)
+                         .invoke();
+        if (!response.has_value())
+        {
+            qWarning() << "Failed...";
+            closeSocket();
+            timer.start(refreshActiveChecks);
+            return false;
+        }
     }
     if (response->response == QString("success"))
         qDebug() << "Success response";
