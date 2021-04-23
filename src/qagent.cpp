@@ -100,6 +100,7 @@ int QAgent::getCompression()
 
 void QAgent::setCompression(int newCompress)
 {
+    qDebug()<<"Compression set: "<<newCompress;
     compression = newCompress;
 }
 
@@ -206,7 +207,7 @@ void QAgent::startCollectData()
 
     for (auto const& it : localArray)
     {
-        if (dataArray->size() == dataArray->capacity())
+        if (dataArray->size() >= bufferSize)
         {
             performActiveCheck();
             dataArray->clear();
