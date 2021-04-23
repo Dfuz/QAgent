@@ -47,7 +47,7 @@ private:
     quint16 listenPort{10050};  // агент будет слушать этот порт для подключений с сервера; диапазон 1024-32767
     quint16 bufferSize = 100;   // максимальное количество значений в буфере памяти
     QHostAddress serverIP{QHostAddress::Null};      // адрес сервера для активных проверок
-    QHostAddress listenIP{QHostAddress::Null}; // адрес, который должен слушать агент
+    QHostAddress listenIP{QHostAddress::Null};      // адрес, который должен слушать агент
     unique_ptr<Utils::QueryBuilder> query;
     unique_ptr<QTcpServer> localServer;                             // локальный сервер для пассивных проверок
     unique_ptr<collVec> dataArray = std::make_unique<collVec>();    // список собранных значений
@@ -61,6 +61,7 @@ private:
     void closeSocket();         // закрытие сокеты
     bool startListen();         // инициализация и запуск локального сервера
     void startCollectData();    // начать сбор данных (активные проверки)
+    void updateVirtualIds(collVec& vec);    // обновляет виртуальные id в массиве данных
     void performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
 
@@ -76,7 +77,6 @@ public:
 private slots:
     bool performPassiveCheck();
     bool performActiveCheck();
-signals:
 };
 
 #endif // QAGENT_H

@@ -100,6 +100,8 @@ bool QAgent::performPassiveCheck()
 
 bool QAgent::performActiveCheck()
 {
+    timer.stop();
+
     // попытка подключиться к серверу
     openSocket();
     if (!query)
@@ -114,6 +116,7 @@ bool QAgent::performActiveCheck()
                 << "Connected to server";
 
     // подготовка сообщения
+    updateVirtualIds(*dataArray);
     QJsonArray jsonArray;
     for (auto const& it : *dataArray)
         jsonArray.push_back(it.toJson());
@@ -121,9 +124,11 @@ bool QAgent::performActiveCheck()
     {
         std::pair{"request", "agent data"},
         std::pair{"data", jsonArray},
-        std::pair{"clock", QString::number(std::time(nullptr))}
+        std::pair{"clock", static_cast<int>(std::time(nullptr))}
     };
     auto message = Utils::DataMessage{payload};
+
+    // отправка сообщения
     auto response = query->makeQuery()
                           .toGet<Utils::Service>()
                           .toSend(message)
@@ -139,6 +144,7 @@ bool QAgent::performActiveCheck()
     else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
 
     closeSocket();
+    timer.start(refreshActiveChecks);
     return true;
 }
 
@@ -169,7 +175,7 @@ void QAgent::startCollectData()
 
     for (auto const& it : localArray)
     {
-        if (dataArray->size() >= dataArray->capacity())
+        if (dataArray->size() == dataArray->capacity())
         {
             performActiveCheck();
             dataArray->clear();
@@ -179,6 +185,13 @@ void QAgent::startCollectData()
 
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
              << "Data collection ended" << Qt::flush;
+}
+
+inline void QAgent::updateVirtualIds(collVec &vec)
+{
+    quint16 counter = 1;
+    for (auto& it : vec)
+        it.virtualId = counter++;
 }
 
 void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
@@ -202,7 +215,6 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
 collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
 {
     collVec localVec;
-    auto counter = static_cast<quint16>(dataArray->size());
     if ((Utils::DataTypes::FileSystem & confBitMask) == confBitMask)
     {
         localVec.push_back
@@ -211,7 +223,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("TotalFSSize"),
                         (quint64)status.TotalFSSize,
-                        counter++,
                     }
                 );
 
@@ -221,7 +232,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("FreeFSSize"),
                         (quint64)status.FreeFSSize,
-                        counter++,
                     }
                 );
 
@@ -231,7 +241,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("FSMountPointsCount"),
                         status.allFs.count(),
-                        counter++,
                     }
                 );
     }
@@ -244,7 +253,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("MemoryTotal"),
                         (quint64)status.MemoryTotal,
-                        counter++,
                     }
                 );
 
@@ -254,7 +262,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("MemoryFree"),
                         (quint64)status.MemoryFree,
-                        counter++,
                     }
                 );
     }
@@ -267,7 +274,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("cpuLoad"),
                         (quint64)status.cpuLoad,
-                        counter++,
                     }
                 );
 
@@ -277,7 +283,6 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                         this->hostName,
                         QString("psCount"),
                         (quint64)status.psCount,
-                        counter++,
                     }
                 );
     }
