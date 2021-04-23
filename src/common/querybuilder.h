@@ -169,7 +169,7 @@ private:
 
         qDebug()<<"Query: waiting to read";
 
-        if (!socket->waitForReadyRead())
+        if (!socket->waitForReadyRead(10000))
             return std::nullopt;
 
         auto gotSize = socket->read(sizeof(quint16) + QFCM_HEADER.size());

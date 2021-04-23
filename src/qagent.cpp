@@ -163,7 +163,7 @@ inline void QAgent::openSocket()
     {
         auto tcpSocket = std::make_shared<QTcpSocket>();
         tcpSocket->connectToHost(serverIP, serverPort);
-        if (tcpSocket->waitForConnected())
+        if (tcpSocket->waitForConnected(10000))
             query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
         else qWarning() << QTime::currentTime().toString(Qt::ISODateWithMs)
                         << "Unable connect to server!" << Qt::flush;
