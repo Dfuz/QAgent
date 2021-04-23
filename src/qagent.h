@@ -6,12 +6,12 @@
 #include "common/data.h"
 #include <os_utils.h>
 
+#include <Qt>
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QCryptographicHash>
 #include <QJsonArray>
-#include <Qt>
 #include <QTextStream>
 #include <QDebug>
 #include <QTcpServer>
