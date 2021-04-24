@@ -101,20 +101,6 @@ bool QAgent::performPassiveCheck()
 bool QAgent::performActiveCheck()
 {
     timer.stop();
-
-    // попытка подключиться к серверу
-    openSocket();
-    if (!query)
-    {
-        qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                    << "No connection to server" << Qt::flush;
-        closeSocket();
-        return false;
-    }
-    performHandshake(query);
-    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                << "Connected to server";
-
     // подготовка сообщения
     updateVirtualIds(*dataArray);
     QJsonArray jsonArray;
@@ -127,6 +113,21 @@ bool QAgent::performActiveCheck()
         std::pair{"clock", static_cast<int>(std::time(nullptr))}
     };
     auto message = Utils::DataMessage{payload};
+
+    // попытка подключиться к серверу
+    openSocket();
+    if (!query)
+    {
+        qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                    << "No connection to server" << Qt::flush;
+        closeSocket();
+        timer.start(refreshActiveChecks);
+        return false;
+    }
+    performHandshake(query);
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+                << "Connected to server";
+
 
     // отправка сообщения
     auto response = query->makeQuery()
