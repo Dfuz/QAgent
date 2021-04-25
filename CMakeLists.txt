@@ -37,7 +37,6 @@ list(APPEND HEADERS
     ${TOP_DIR}/src/common/message_spec/messagereadable_service.h
     ${TOP_DIR}/src/common/message_spec/messagereadable_test.h)
 
-add_subdirectory(os_read_lib)
 add_subdirectory(test)
 add_subdirectory(src)
 add_subdirectory(lib)

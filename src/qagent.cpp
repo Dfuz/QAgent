@@ -2,8 +2,12 @@
 #include "common/utils.h"
 
 QAgent::QAgent(QObject *parent) : QObject(parent)
+{}
+
+QAgent::~QAgent()
 {
-    //timer.callOnTimeout(this, &QAgent::startCollectData);
+    for (auto& timer : timers)
+        delete timer;
 }
 
 void QAgent::readConfig(QString settings_path)
@@ -35,17 +39,6 @@ void QAgent::readConfig(QString settings_path)
         bufferSize = settings.value("BufferSize").toUInt();
     dataArray->reserve(bufferSize);
 
-    // "Configuration" : ["Memory", "Proccess", "FileSystem"],
-//    if (!settings.value("Configuration").isNull())
-//    {
-//        auto confMap = settings.value("Configuration").toList();
-//        for (const auto& now : confMap)
-//        {
-//            if (collectData.find(now.toString()) != end(collectData))
-//                confBitMask &= collectData.at(now.toString());
-//        }
-//    }
-
     if (!settings.value("Configuration").isNull())
     {
         auto jsonArr = settings.value("Configuration").toJsonArray();
@@ -56,15 +49,11 @@ void QAgent::readConfig(QString settings_path)
         for (auto& timer : timers)
             timer->start();
     }
-
-    if (!settings.value("RefreshActiveChecks").isNull())
-        refreshActiveChecks = Utils::parseTime(settings.value("RefreshActiveChecks")
-                                    .toString());
 }
 
 void QAgent::startAgent()
 {
-    timer.start(refreshActiveChecks);
+    runAllTimers();
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
              << "Active checks started!";
 
@@ -74,6 +63,16 @@ void QAgent::startAgent()
         qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
                  << "Passive checks started!";
     }
+}
+
+void QAgent::setupTimer(const QString& string, QTimer* timer, const QJsonObject& obj)
+{
+    const auto str = obj.value(string).toString();
+    const auto time = Utils::parseTime(str);
+    if (str.contains("SingleShot"))
+        timer->setSingleShot(true);
+    timer->setInterval(time);
+    timers.push_back(timer);
 }
 
 bool QAgent::startListen()
@@ -112,7 +111,7 @@ bool QAgent::performPassiveCheck()
 
 bool QAgent::performActiveCheck()
 {
-    //timer.stop();
+    stopAllTimers();
     // подготовка сообщения
     updateVirtualIds(*dataArray);
     QJsonArray jsonArray;
@@ -136,7 +135,7 @@ bool QAgent::performActiveCheck()
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
                     << "No connection to server" << Qt::flush;
         closeSocket();
-        timer.start(refreshActiveChecks);
+        runAllTimers();
         return false;
     }
     performHandshake(query);
@@ -160,7 +159,7 @@ bool QAgent::performActiveCheck()
         {
             qWarning() << "Failed...";
             closeSocket();
-            timer.start(refreshActiveChecks);
+            runAllTimers();
             return false;
         }
     }
@@ -169,15 +168,8 @@ bool QAgent::performActiveCheck()
     else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
 
     closeSocket();
-    //timer.start(refreshActiveChecks);
+    runAllTimers();
     return true;
-}
-
-
-QAgent::~QAgent()
-{
-    for (auto& timer : timers)
-        delete timer;
 }
 
 inline void QAgent::openSocket()
@@ -196,27 +188,6 @@ inline void QAgent::openSocket()
 inline void QAgent::closeSocket()
 {
     query.reset(nullptr);
-}
-
-void QAgent::startCollectData()
-{
-    /*qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Data collection started" << Qt::flush;
-    auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
-    //auto localArray = toCollVec(dataStruct);
-
-    for (auto const& it : localArray)
-    {
-        if (dataArray->size() >= bufferSize)
-        {
-            performActiveCheck();
-            dataArray->clear();
-        }
-        dataArray->push_back(it);
-    }
-
-    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Data collection ended" << Qt::flush;*/
 }
 
 inline void QAgent::updateVirtualIds(collVec &vec)
@@ -245,84 +216,6 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
     }
 }
 
-collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
-{
-    Q_UNUSED(status);
-    /*collVec localVec;
-    if ((Utils::DataTypes::FileSystem & confBitMask) == confBitMask)
-    {
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("TotalFSSize"),
-                        (quint64)status.TotalFSSize,
-                    }
-                );
-
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("FreeFSSize"),
-                        (quint64)status.FreeFSSize,
-                    }
-                );
-
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("FSMountPointsCount"),
-                        status.allFs.count(),
-                    }
-                );
-    }
-
-    if ((Utils::DataTypes::Memory & confBitMask) == confBitMask)
-    {
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("MemoryTotal"),
-                        (quint64)status.MemoryTotal,
-                    }
-                );
-
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("MemoryFree"),
-                        (quint64)status.MemoryFree,
-                    }
-                );
-    }
-
-    if ((Utils::DataTypes::Process & confBitMask) == confBitMask)
-    {
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("cpuLoad"),
-                        (quint64)status.cpuLoad,
-                    }
-                );
-
-        localVec.push_back
-                (
-                    {
-                        this->hostName,
-                        QString("psCount"),
-                        (quint64)status.psCount,
-                    }
-                );
-    }
-    return localVec;*/
-}
-
 bool QAgent::addData(const QJsonValue& value, const QString& key)
 {
     if (dataArray->size() == bufferSize)
@@ -346,107 +239,48 @@ bool QAgent::parseJsonConfig(const QJsonValue& jsonVal)
 
     auto jsonObj = jsonVal.toObject();
     auto timer = new QTimer(this);
-    QString str;
-    std::chrono::milliseconds time;
 
     if (jsonObj.contains(Utils::AvailableNetworkDevices))
     {
         timer->callOnTimeout(this, &QAgent::getAvailableNetworkdevices);
-        /*QTimer timer(this);
-        timer.callOnTimeout(this, &QAgent::getAvailableNetworkdevices);
-
-        auto str = jsonObj.value(Utils::AvailableNetworkDevices).toString();
-        auto time = Utils::parseTime(jsonObj.value(Utils::AvailableNetworkDevices).toString());
-        if (str.contains("SingleShot"))
-            timer.setSingleShot(true);
-        timer.setInterval(time);
-        timers.push_back(timer);*/
-
-        str = jsonObj.value(Utils::AvailableNetworkDevices).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::AvailableNetworkDevices, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::CurrentMultiCoreUsage))
     {
         cpuMonitoring->initMultiCore();
-        timer->callOnTimeout(this, &QAgent::currentMultiCoreUsage);
-
-        str = jsonObj.value(Utils::CurrentMultiCoreUsage).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        timer->callOnTimeout(this, &QAgent::currentMultiCoreUsage);      
+        setupTimer(Utils::CurrentMultiCoreUsage, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::CurrentCoreUsage))
     {
         cpuMonitoring->initcpuUsage();
         timer->callOnTimeout(this, &QAgent::currentCoreUsage);
-
-        str = jsonObj.value(Utils::CurrentCoreUsage).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::CurrentCoreUsage, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::NumOfCpus))
     {
         timer->callOnTimeout(this, &QAgent::numOfCPUs);
-
-        str = jsonObj.value(Utils::NumOfCpus).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::NumOfCpus, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::CpuName))
     {
         timer->callOnTimeout(this, &QAgent::CPUName);
-
-        str = jsonObj.value(Utils::CpuName).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::CpuName, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::TotalMemInKb))
     {
         timer->callOnTimeout(this, &QAgent::totalMemoryInKB);
-
-        str = jsonObj.value(Utils::TotalMemInKb).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::TotalMemInKb, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::CurrentMemUsageInKb))
     {
         timer->callOnTimeout(this, &QAgent::currentMemUsageInKB);
-
-        str = jsonObj.value(Utils::CurrentMemUsageInKb).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::CurrentMemUsageInKb, timer, jsonObj);
     }
     else if (jsonObj.contains(Utils::CurrentMemUsageInPercent))
     {
         timer->callOnTimeout(this, &QAgent::currentMemUsageInPercent);
-
-        str = jsonObj.value(Utils::CurrentMemUsageInPercent).toString();
-        time = Utils::parseTime(str);
-        if (str.contains("SingleShot"))
-            timer->setSingleShot(true);
-        timer->setInterval(time);
-        timers.push_back(timer);
+        setupTimer(Utils::CurrentMemUsageInPercent, timer, jsonObj);
     }
     else
     {
@@ -454,6 +288,18 @@ bool QAgent::parseJsonConfig(const QJsonValue& jsonVal)
         return false;
     }
     return true;
+}
+
+void QAgent::stopAllTimers()
+{
+    for (auto& timer : timers)
+        timer->stop();
+}
+
+void QAgent::runAllTimers()
+{
+    for (auto& timer : timers)
+        timer->start();
 }
 
 // ********* CPU USAGE ********* //
