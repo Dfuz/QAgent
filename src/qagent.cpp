@@ -209,7 +209,8 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
     QVariantMap payload
     {
         {"who", "agent"},
-        {"macaddress", Utils::getMacAddress()}
+        {"macaddress", Utils::getMacAddress()},
+        {"hostname", hostName}
     };
     auto message = Utils::HandshakeMessage{payload};
     auto msg = _query->makeQueryRead()

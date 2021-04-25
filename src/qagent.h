@@ -32,7 +32,7 @@ using collVec = vector<Utils::CollectableData>;
 static const map<QString, Utils::DataTypes> collectData =
 {
     {"FileSystem", Utils::DataTypes::FileSystem},
-    {"Process", Utils::DataTypes::Process},
+    {"Proccess", Utils::DataTypes::Process},
     {"Memory", Utils::DataTypes::Memory}
 };
 
