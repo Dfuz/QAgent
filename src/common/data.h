@@ -15,7 +15,7 @@ struct CollectableData
 {
     QString hostName; // видимое имя узла сети, которому принадлежит элемент данных
     QString keyData; // тип данных
-    QVariant value;
+    QJsonValue value;
     quint16 virtualId = 0; // используется, чтобы отбрасывать дубликаты значений, которые могут быть отправлены в средах с плохой связью
     std::time_t clock = std::time(nullptr);
 

@@ -6,6 +6,7 @@ add_executable(QAgent
     ${HEADERS})
 
 include_directories(${TOP_DIR}/os_read_lib)
+include_directories(${TOP_DIR}/lib)
 
 target_link_libraries(QAgent
     ${QT_MODULES}

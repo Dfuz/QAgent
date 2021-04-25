@@ -5,12 +5,18 @@
 #include "common/utils.h"
 #include "common/data.h"
 #include <os_utils.h>
+#include <linux_cpuload.hpp>
+#include <linux_memoryload.hpp>
+#include <linux_networkload.hpp>
+#include <linux_systemutil.hpp>
+#include <util/record_value.hpp>
 
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <QCryptographicHash>
 #include <QJsonArray>
+#include <QVector>
 #include <Qt>
 #include <QTextStream>
 #include <QDebug>
@@ -28,13 +34,13 @@ using std::string;
 using std::map;
 using collVec = vector<Utils::CollectableData>;
 
-inline QMap<QString, QTimer> initializeMap(QStringList& list)
+/*inline QMap<QString, QTimer> initializeMap(QStringList& list)
 {
     QMap<QString, QTimer> localmap;
     foreach(QString string, list)
         localmap[string];
     return localmap;
-}
+}*/
 
 // список собираемых значений
 static const map<QString, Utils::DataTypes> collectData
@@ -44,8 +50,9 @@ static const map<QString, Utils::DataTypes> collectData
     {"Memory", Utils::DataTypes::Memory}
 };
 
-//static QMap<QString, QTimer> collectabData =
-//        initializeMap(QStringList("currentmulticoreusage", "numOfCpus"));
+static auto memoryMonitoring = std::make_unique<memoryLoad>();
+static auto cpuMonitoring = std::make_unique<cpuLoad>();
+static auto ethernetMonitoring = networkLoad::createLinuxEthernetScanList();
 
 class QAgent : public QObject
 {
@@ -63,21 +70,26 @@ private:
     unique_ptr<QTcpServer> localServer;                             // локальный сервер для пассивных проверок
     unique_ptr<collVec> dataArray = std::make_unique<collVec>();    // список собранных значений
     std::chrono::milliseconds refreshActiveChecks{60s};             // значение таймера для активных проверок
-    int confBitMask = 0b111; // маска конфигурации (какие параметры считывать)
+    int confBitMask = 0b111;    // маска конфигурации (какие параметры считывать)
     inline static int compression;
     QString macAddress{Utils::getMacAddress()};
+    QVector<QTimer*> timers;
 
     // Методы
-    void openSocket();          // инициализация сокета для активных проверок
-    void closeSocket();         // закрытие сокеты
-    bool startListen();         // инициализация и запуск локального сервера
-    void startCollectData();    // начать сбор данных (активные проверки)
+    void openSocket();                      // инициализация сокета для активных проверок
+    void closeSocket();                     // закрытие сокеты
+    bool startListen();                     // инициализация и запуск локального сервера
+    void startCollectData();                // начать сбор данных (активные проверки)
     void updateVirtualIds(collVec& vec);    // обновляет виртуальные id в массиве данных
+    bool addActiveCheck(const QJsonObject&);
     void performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query);
     collVec toCollVec(const OS_UTILS::OS_STATUS& status) const;
+    bool addData(const QJsonValue& value, const QString& key);
+    bool parseJsonConfig(const QJsonValue&);
 
 public:
     explicit QAgent(QObject *parent = nullptr);
+    ~QAgent();
     void readConfig(QString settings_path = "conf.json");
     void startAgent();
     void init();
@@ -90,6 +102,19 @@ private slots:
     bool performActiveCheck();
 
 public slots:
+    // CPU_LOAD
+    bool currentMultiCoreUsage();
+    bool currentCoreUsage();
+    bool numOfCPUs();
+    bool CPUName();
+
+    // MEMORY
+    bool totalMemoryInKB();
+    bool currentMemUsageInKB();
+    bool currentMemUsageInPercent();
+
+    // NETWORK
+    bool getAvailableNetworkdevices();
 };
 
 #endif // QAGENT_H

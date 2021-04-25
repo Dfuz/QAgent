@@ -3,7 +3,7 @@
 
 QAgent::QAgent(QObject *parent) : QObject(parent)
 {
-    timer.callOnTimeout(this, &QAgent::startCollectData);
+    //timer.callOnTimeout(this, &QAgent::startCollectData);
 }
 
 void QAgent::readConfig(QString settings_path)
@@ -36,14 +36,25 @@ void QAgent::readConfig(QString settings_path)
     dataArray->reserve(bufferSize);
 
     // "Configuration" : ["Memory", "Proccess", "FileSystem"],
+//    if (!settings.value("Configuration").isNull())
+//    {
+//        auto confMap = settings.value("Configuration").toList();
+//        for (const auto& now : confMap)
+//        {
+//            if (collectData.find(now.toString()) != end(collectData))
+//                confBitMask &= collectData.at(now.toString());
+//        }
+//    }
+
     if (!settings.value("Configuration").isNull())
     {
-        auto confMap = settings.value("Configuration").toList();
-        for (const auto& now : confMap)
-        {
-            if (collectData.find(now.toString()) != end(collectData))
-                confBitMask &= collectData.at(now.toString());
-        }
+        auto jsonArr = settings.value("Configuration").toJsonArray();
+        for (const auto& jsonVal : jsonArr)
+            if (!parseJsonConfig(jsonVal))
+                qCritical() << "Unable to parse JSON configuration file!" << Qt::endl;
+
+        for (auto& timer : timers)
+            timer->start();
     }
 
     if (!settings.value("RefreshActiveChecks").isNull())
@@ -100,12 +111,15 @@ bool QAgent::performPassiveCheck()
 
 bool QAgent::performActiveCheck()
 {
-    timer.stop();
+    //timer.stop();
     // подготовка сообщения
     updateVirtualIds(*dataArray);
     QJsonArray jsonArray;
     for (auto const& it : *dataArray)
+    {
+        qDebug() << it.toJson();
         jsonArray.push_back(it.toJson());
+    }
     QVariantMap payload
     {
         std::pair{"request", "agent data"},
@@ -154,8 +168,15 @@ bool QAgent::performActiveCheck()
     else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
 
     closeSocket();
-    timer.start(refreshActiveChecks);
+    //timer.start(refreshActiveChecks);
     return true;
+}
+
+
+QAgent::~QAgent()
+{
+    for (auto& timer : timers)
+        delete timer;
 }
 
 inline void QAgent::openSocket()
@@ -178,10 +199,10 @@ inline void QAgent::closeSocket()
 
 void QAgent::startCollectData()
 {
-    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+    /*qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
              << "Data collection started" << Qt::flush;
     auto dataStruct = OS_UTILS::OS_EVENTS::pullOSStatus(confBitMask);
-    auto localArray = toCollVec(dataStruct);
+    //auto localArray = toCollVec(dataStruct);
 
     for (auto const& it : localArray)
     {
@@ -194,7 +215,7 @@ void QAgent::startCollectData()
     }
 
     qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
-             << "Data collection ended" << Qt::flush;
+             << "Data collection ended" << Qt::flush;*/
 }
 
 inline void QAgent::updateVirtualIds(collVec &vec)
@@ -225,7 +246,8 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
 
 collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
 {
-    collVec localVec;
+    Q_UNUSED(status);
+    /*collVec localVec;
     if ((Utils::DataTypes::FileSystem & confBitMask) == confBitMask)
     {
         localVec.push_back
@@ -297,5 +319,201 @@ collVec QAgent::toCollVec(const OS_UTILS::OS_STATUS& status) const
                     }
                 );
     }
-    return localVec;
+    return localVec;*/
 }
+
+bool QAgent::addData(const QJsonValue& value, const QString& key)
+{
+    if (dataArray->size() == bufferSize)
+    {
+        performActiveCheck();
+        dataArray->clear();
+    }
+    dataArray->push_back({
+                             this->hostName,
+                             key,
+                             value,
+                         });
+
+    return true;
+}
+
+bool QAgent::parseJsonConfig(const QJsonValue& jsonVal)
+{
+    if (!jsonVal.isObject())
+        return false;
+
+    auto jsonObj = jsonVal.toObject();
+    auto timer = new QTimer(this);
+    QString str;
+    std::chrono::milliseconds time;
+
+    if (jsonObj.contains(Utils::AvailableNetworkDevices))
+    {
+        timer->callOnTimeout(this, &QAgent::getAvailableNetworkdevices);
+        /*QTimer timer(this);
+        timer.callOnTimeout(this, &QAgent::getAvailableNetworkdevices);
+
+        auto str = jsonObj.value(Utils::AvailableNetworkDevices).toString();
+        auto time = Utils::parseTime(jsonObj.value(Utils::AvailableNetworkDevices).toString());
+        if (str.contains("SingleShot"))
+            timer.setSingleShot(true);
+        timer.setInterval(time);
+        timers.push_back(timer);*/
+
+        str = jsonObj.value(Utils::AvailableNetworkDevices).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::CurrentMultiCoreUsage))
+    {
+        cpuMonitoring->initMultiCore();
+        timer->callOnTimeout(this, &QAgent::currentMultiCoreUsage);
+
+        str = jsonObj.value(Utils::CurrentMultiCoreUsage).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::CurrentCoreUsage))
+    {
+        cpuMonitoring->initcpuUsage();
+        timer->callOnTimeout(this, &QAgent::currentCoreUsage);
+
+        str = jsonObj.value(Utils::CurrentCoreUsage).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::NumOfCpus))
+    {
+        timer->callOnTimeout(this, &QAgent::numOfCPUs);
+
+        str = jsonObj.value(Utils::NumOfCpus).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::CpuName))
+    {
+        timer->callOnTimeout(this, &QAgent::CPUName);
+
+        str = jsonObj.value(Utils::CpuName).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::TotalMemInKb))
+    {
+        timer->callOnTimeout(this, &QAgent::totalMemoryInKB);
+
+        str = jsonObj.value(Utils::TotalMemInKb).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::CurrentMemUsageInKb))
+    {
+        timer->callOnTimeout(this, &QAgent::currentMemUsageInKB);
+
+        str = jsonObj.value(Utils::CurrentMemUsageInKb).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else if (jsonObj.contains(Utils::CurrentMemUsageInPercent))
+    {
+        timer->callOnTimeout(this, &QAgent::currentMemUsageInPercent);
+
+        str = jsonObj.value(Utils::CurrentMemUsageInPercent).toString();
+        time = Utils::parseTime(str);
+        if (str.contains("SingleShot"))
+            timer->setSingleShot(true);
+        timer->setInterval(time);
+        timers.push_back(timer);
+    }
+    else
+    {
+        delete timer;
+        return false;
+    }
+    return true;
+}
+
+// ********* CPU USAGE ********* //
+bool QAgent::currentMultiCoreUsage()
+{
+    auto localVec = cpuMonitoring->getCurrentMultiCoreUsage();
+    if (localVec.size() == 0)
+        return false;
+    QJsonArray value;
+    std::copy(begin(localVec), end(localVec), std::back_inserter(value));
+    qDebug() << value;
+    return addData(value, Utils::CurrentMultiCoreUsage);
+}
+
+bool QAgent::currentCoreUsage()
+{
+    auto value = cpuMonitoring->getCurrentCpuUsage();
+    return addData(value, Utils::CurrentCoreUsage);
+}
+
+bool QAgent::numOfCPUs()
+{
+    auto value = cpuMonitoring->getCores();
+    return addData(QJsonValue::fromVariant(value), Utils::NumOfCpus);
+}
+
+bool QAgent::CPUName()
+{
+    auto value = cpuMonitoring->getCPUName();
+    return addData(QString::fromStdString(value), Utils::CpuName);
+}
+
+// ********* MEMORY USAGE ********* //
+bool QAgent::totalMemoryInKB()
+{
+    auto value = memoryMonitoring->getTotalMemoryInKB();
+    return addData(QJsonValue::fromVariant(QVariant::fromValue(value)), Utils::TotalMemInKb);
+}
+
+bool QAgent::currentMemUsageInKB()
+{
+    auto value = memoryMonitoring->getCurrentMemUsageInKB();
+    return addData(QJsonValue::fromVariant(QVariant::fromValue(value)), Utils::CurrentMemUsageInKb);
+}
+
+bool QAgent::currentMemUsageInPercent()
+{
+    auto value = memoryMonitoring->getCurrentMemUsageInPercent();
+    return addData(value, Utils::CurrentMemUsageInPercent);
+}
+
+
+// ********* NETWORK USAGE ********* //
+bool QAgent::getAvailableNetworkdevices()
+{
+    if (ethernetMonitoring.size() == 0)
+        return false;
+    QJsonArray value;
+    for (const auto& it : ethernetMonitoring)
+        value.push_back(QString::fromStdString(it->getDeviceName()));
+    return addData(value, Utils::AvailableNetworkDevices);
+}
+
+
