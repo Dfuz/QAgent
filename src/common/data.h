@@ -4,6 +4,7 @@
 #include "utils.h"
 #include <QJsonObject>
 #include <QString>
+#include <QJsonDocument>
 #include <string>
 #include <ctime>
 #include <map>
@@ -25,7 +26,7 @@ struct CollectableData
         {
             {"hostname", hostName},
             {"key", keyData},
-            {"value", value.toString()},
+            {"value", value},
             {"id", virtualId},
             {"clock", static_cast<int>(clock)}
         };

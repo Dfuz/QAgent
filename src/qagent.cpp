@@ -477,7 +477,7 @@ bool QAgent::currentCoreUsage()
 bool QAgent::numOfCPUs()
 {
     auto value = cpuMonitoring->getCores();
-    return addData(QJsonValue::fromVariant(value), Utils::NumOfCpus);
+    return addData(static_cast<quint16>(value), Utils::NumOfCpus);
 }
 
 bool QAgent::CPUName()
@@ -490,13 +490,13 @@ bool QAgent::CPUName()
 bool QAgent::totalMemoryInKB()
 {
     auto value = memoryMonitoring->getTotalMemoryInKB();
-    return addData(QJsonValue::fromVariant(QVariant::fromValue(value)), Utils::TotalMemInKb);
+    return addData(static_cast<quint16>(value), Utils::TotalMemInKb);
 }
 
 bool QAgent::currentMemUsageInKB()
 {
     auto value = memoryMonitoring->getCurrentMemUsageInKB();
-    return addData(QJsonValue::fromVariant(QVariant::fromValue(value)), Utils::CurrentMemUsageInKb);
+    return addData(static_cast<quint16>(value), Utils::CurrentMemUsageInKb);
 }
 
 bool QAgent::currentMemUsageInPercent()
@@ -516,5 +516,3 @@ bool QAgent::getAvailableNetworkdevices()
         value.push_back(QString::fromStdString(it->getDeviceName()));
     return addData(value, Utils::AvailableNetworkDevices);
 }
-
-
