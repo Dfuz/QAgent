@@ -28,13 +28,24 @@ using std::string;
 using std::map;
 using collVec = vector<Utils::CollectableData>;
 
+inline QMap<QString, QTimer> initializeMap(QStringList& list)
+{
+    QMap<QString, QTimer> localmap;
+    foreach(QString string, list)
+        localmap[string];
+    return localmap;
+}
+
 // список собираемых значений
-static const map<QString, Utils::DataTypes> collectData =
+static const map<QString, Utils::DataTypes> collectData
 {
     {"FileSystem", Utils::DataTypes::FileSystem},
     {"Proccess", Utils::DataTypes::Process},
     {"Memory", Utils::DataTypes::Memory}
 };
+
+//static QMap<QString, QTimer> collectabData =
+//        initializeMap(QStringList("currentmulticoreusage", "numOfCpus"));
 
 class QAgent : public QObject
 {
@@ -77,6 +88,8 @@ public:
 private slots:
     bool performPassiveCheck();
     bool performActiveCheck();
+
+public slots:
 };
 
 #endif // QAGENT_H
