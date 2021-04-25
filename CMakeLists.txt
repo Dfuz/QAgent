@@ -40,3 +40,4 @@ list(APPEND HEADERS
 add_subdirectory(os_read_lib)
 add_subdirectory(test)
 add_subdirectory(src)
+add_subdirectory(lib)
