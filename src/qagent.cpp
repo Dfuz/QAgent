@@ -51,6 +51,12 @@ void QAgent::readConfig(QString settings_path)
     }
 }
 
+void QAgent::setHostName(const QString &newName)
+{
+    qDebug() << "New hostname: " << newName;
+    hostName = newName;
+}
+
 void QAgent::startAgent()
 {
     runAllTimers();
@@ -111,7 +117,6 @@ bool QAgent::performPassiveCheck()
 
 bool QAgent::performActiveCheck()
 {
-    stopAllTimers();
     // подготовка сообщения
     updateVirtualIds(*dataArray);
     QJsonArray jsonArray;
@@ -135,7 +140,6 @@ bool QAgent::performActiveCheck()
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
                     << "No connection to server" << Qt::flush;
         closeSocket();
-        runAllTimers();
         return false;
     }
     performHandshake(query);
@@ -159,7 +163,6 @@ bool QAgent::performActiveCheck()
         {
             qWarning() << "Failed...";
             closeSocket();
-            runAllTimers();
             return false;
         }
     }
@@ -168,7 +171,6 @@ bool QAgent::performActiveCheck()
     else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
 
     closeSocket();
-    runAllTimers();
     return true;
 }
 
@@ -336,13 +338,13 @@ bool QAgent::CPUName()
 bool QAgent::totalMemoryInKB()
 {
     auto value = memoryMonitoring->getTotalMemoryInKB();
-    return addData(static_cast<quint16>(value), Utils::TotalMemInKb);
+    return addData(static_cast<qint64>(value), Utils::TotalMemInKb);
 }
 
 bool QAgent::currentMemUsageInKB()
 {
     auto value = memoryMonitoring->getCurrentMemUsageInKB();
-    return addData(static_cast<quint16>(value), Utils::CurrentMemUsageInKb);
+    return addData(static_cast<qint64>(value), Utils::CurrentMemUsageInKb);
 }
 
 bool QAgent::currentMemUsageInPercent()

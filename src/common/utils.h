@@ -11,21 +11,14 @@
 
 namespace Utils {
 
- static const QString CurrentMultiCoreUsage = "CurrentMultiCoreUsage";
- static const QString CurrentCoreUsage = "CurrentCoreUsage";
- static const QString NumOfCpus = "NumOfCpus";
- static const QString CpuName = "CpuName";
- static const QString TotalMemInKb = "TotalMemInKb";
- static const QString CurrentMemUsageInKb = "CurrentMemUsageInKb";
- static const QString CurrentMemUsageInPercent = "CurrentMemUsageInPercent";
- static const QString AvailableNetworkDevices = "AvailableNetworkDevices";
-
-enum DataTypes
-{
-    FileSystem  =   0b110,
-    Memory      =   0b101,
-    Process     =   0b011
-};
+ static const QString CurrentMultiCoreUsage     = "CurrentMultiCoreUsage";
+ static const QString CurrentCoreUsage          = "CurrentCoreUsage";
+ static const QString NumOfCpus                 = "NumOfCpus";
+ static const QString CpuName                   = "CpuName";
+ static const QString TotalMemInKb              = "TotalMemInKb";
+ static const QString CurrentMemUsageInKb       = "CurrentMemUsageInKb";
+ static const QString CurrentMemUsageInPercent  = "CurrentMemUsageInPercent";
+ static const QString AvailableNetworkDevices   = "AvailableNetworkDevices";
 
 inline bool readJsonFile(QIODevice &device, QSettings::SettingsMap &map)
 {
