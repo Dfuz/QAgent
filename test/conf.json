@@ -1,7 +1,17 @@
 {
     "ServerIP" : "127.0.0.1",
+    "HostName" : "SimpleAgent",
     "ServerPort" : 1234,
-    "RefreshActiveChecks" : "10s",
     "BufferSize" : 20,
-    "Configuration" : ["FileSystem", "Memory", "Proccess"]
+    "Configuration" : 
+    [
+        {"CpuName": "5s:SingleShot"},
+        {"NumOfCpus": "5s:SingleShot"},
+        {"TotalMemInKb": "5s:SingleShot"},
+        {"CurrentMultiCoreUsage": "3s"},
+        {"CurrentCoreUsage": "10s"},     
+        {"CurrentMemUsageInPercent": "17s"},
+        {"CurrentMemUsageInKb": "17s"},
+        {"AvailableNetworkDevices": "20s:SingleShot"}
+    ]
 }
