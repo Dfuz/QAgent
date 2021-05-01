@@ -21,7 +21,7 @@ list(APPEND MONITOR_LIB_HEADERS
 	${CMAKE_CURRENT_LIST_DIR}/util/record_value.hpp)
 
 
-add_library(linuxmonitoring SHARED
+add_library(linuxmonitoring STATIC
 	    ${MONITOR_LIB_SOURCES}
 	    ${MONITOR_LIB_HEADERS})
 target_compile_options(linuxmonitoring PRIVATE ${COMPILER_SETTINGS})
