@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
     parser.process(app);
 
     QAgent agent;
-    if (!parser.value("port").isEmpty())
+    if (parser.value("config").isEmpty())
         agent.readConfig();
-    else agent.readConfig(parser.value("port"));
+    else agent.readConfig(parser.value("config"));
 
     if (!parser.value("name").isEmpty())
         agent.setHostName(parser.value("name"));

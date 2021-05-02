@@ -208,9 +208,9 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
         {"hostname", hostName}
     };
     auto message = Utils::HandshakeMessage{payload};
-    auto msg = _query->makeQueryRead()
-           .toGet<Utils::Handshake>()
+    auto msg = _query->makeQuery()
            .toSend(message)
+           .toGet<Utils::Handshake>() 
            .invoke();
     if (msg)
     {
@@ -218,7 +218,7 @@ void QAgent::performHandshake(std::unique_ptr<Utils::QueryBuilder>& _query)
     }
 }
 
-bool QAgent::addData(const QJsonValue& value, const QString& key)
+inline bool QAgent::addData(const QJsonValue& value, const QString& key)
 {
     if (dataArray->size() == bufferSize)
     {
@@ -312,25 +312,32 @@ bool QAgent::currentMultiCoreUsage()
         return false;
     QJsonArray value;
     std::copy(begin(localVec), end(localVec), std::back_inserter(value));
-    qDebug() << value;
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Current multicore usage";
     return addData(value, Utils::CurrentMultiCoreUsage);
 }
 
 bool QAgent::currentCoreUsage()
 {
     auto value = cpuMonitoring->getCurrentCpuUsage();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Current core usage";
     return addData(value, Utils::CurrentCoreUsage);
 }
 
 bool QAgent::numOfCPUs()
 {
     auto value = cpuMonitoring->getCores();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Number of processor cores";
     return addData(static_cast<quint16>(value), Utils::NumOfCpus);
 }
 
 bool QAgent::CPUName()
 {
     auto value = cpuMonitoring->getCPUName();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "CPU name";
     return addData(QString::fromStdString(value), Utils::CpuName);
 }
 
@@ -338,18 +345,24 @@ bool QAgent::CPUName()
 bool QAgent::totalMemoryInKB()
 {
     auto value = memoryMonitoring->getTotalMemoryInKB();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Total memory in KB";
     return addData(static_cast<qint64>(value), Utils::TotalMemInKb);
 }
 
 bool QAgent::currentMemUsageInKB()
 {
     auto value = memoryMonitoring->getCurrentMemUsageInKB();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Current memory usage in KB";
     return addData(static_cast<qint64>(value), Utils::CurrentMemUsageInKb);
 }
 
 bool QAgent::currentMemUsageInPercent()
 {
     auto value = memoryMonitoring->getCurrentMemUsageInPercent();
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Current memory usage in percent";
     return addData(value, Utils::CurrentMemUsageInPercent);
 }
 
@@ -362,5 +375,7 @@ bool QAgent::getAvailableNetworkdevices()
     QJsonArray value;
     for (const auto& it : ethernetMonitoring)
         value.push_back(QString::fromStdString(it->getDeviceName()));
+    qDebug() << QTime::currentTime().toString(Qt::ISODateWithMs)
+             << "Available network devices";
     return addData(value, Utils::AvailableNetworkDevices);
 }
