@@ -44,7 +44,7 @@ void QAgent::readConfig(QString settings_path)
         auto jsonArr = settings.value("Configuration").toJsonArray();
         for (const auto& jsonVal : jsonArr)
             if (!parseJsonConfig(jsonVal))
-                qCritical() << "Unable to parse JSON configuration file!" << Qt::endl;
+                qCritical() << "Unable to parse JSON configuration file!";
 
         for (auto& timer : timers)
             timer->start();
@@ -89,7 +89,7 @@ bool QAgent::startListen()
     if (!localServer->listen(listenIP, listenPort))
     {
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                    << "Unable to start local server!" << Qt::flush;
+                    << "Unable to start local server!";
         localServer.reset(nullptr);
         return false;
     }
@@ -138,7 +138,7 @@ bool QAgent::performActiveCheck()
     if (!query)
     {
         qCritical() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                    << "No connection to server" << Qt::flush;
+                    << "No connection to server";
         closeSocket();
         return false;
     }
@@ -168,7 +168,7 @@ bool QAgent::performActiveCheck()
     }
     if (response->response == QString("success"))
         qDebug() << "Success response";
-    else qWarning() << "Something went wrong! Server response: " << response->response << Qt::flush;
+    else qWarning() << "Something went wrong! Server response: " << response->response;
 
     closeSocket();
     return true;
@@ -183,7 +183,7 @@ inline void QAgent::openSocket()
         if (tcpSocket->waitForConnected(10000))
             query = std::make_unique<Utils::QueryBuilder>(tcpSocket);
         else qWarning() << QTime::currentTime().toString(Qt::ISODateWithMs)
-                        << "Unable connect to server!" << Qt::flush;
+                        << "Unable connect to server!";
     }
 }
 
